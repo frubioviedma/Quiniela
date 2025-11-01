@@ -1,0 +1,9 @@
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+matplotlib>=3.7.0
+reportlab>=4.0.0
+numpy>=1.24.0
+
+# NOTA: tkinter viene con Python pero en Linux necesita instalación adicional
+# Ejecuta: sudo apt install python3-tk
