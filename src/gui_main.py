@@ -212,10 +212,10 @@ class QuinielaApp:
         self.notebook.add(frame, text="Reducción")
         
         # Información de la quiniela previa
-        info_frame = ttk.LabelFrame(frame, text="Quiniela Previa", padding=10)
+        info_frame = ttk.LabelFrame(frame, text="⚠️ Quiniela desde Generador (aplicará reducción aquí)", padding=10)
         info_frame.pack(fill='x', pady=5)
         
-        self.info_quiniela_text = ScrolledText(info_frame, height=3, wrap='word', state='disabled')
+        self.info_quiniela_text = ScrolledText(info_frame, height=4, wrap='word', state='disabled')
         self.info_quiniela_text.pack(fill='x')
         
         # Tipo de reducción
@@ -641,12 +641,15 @@ class QuinielaApp:
             
             # Mostrar resultado
             self.result_text.delete(1.0, 'end')
-            self.result_text.insert('end', f"Quiniela Generada\n\n")
-            self.result_text.insert('end', f"Dobles: {num_dobles} en posiciones {dobles}\n")
-            self.result_text.insert('end', f"Triples: {num_triples} en posiciones {triples}\n")
-            self.result_text.insert('end', f"Número de apuestas: {num_apuestas}\n")
-            self.result_text.insert('end', f"Coste total: {coste:.2f} €\n\n")
-            self.result_text.insert('end', "Primeras 20 combinaciones:\n\n")
+            self.result_text.insert('end', f"✅ Quiniela Generada Exitosamente\n\n")
+            self.result_text.insert('end', f"📊 Resumen:\n")
+            self.result_text.insert('end', f"   • Dobles: {num_dobles} en posiciones {dobles}\n")
+            self.result_text.insert('end', f"   • Triples: {num_triples} en posiciones {triples}\n")
+            self.result_text.insert('end', f"   • Número de apuestas: {num_apuestas}\n")
+            self.result_text.insert('end', f"   • Coste total: {coste:.2f} €\n\n")
+            self.result_text.insert('end', "➡️ Esta quiniela está LISTA para aplicar reducción\n")
+            self.result_text.insert('end', "   Ve a la pestaña 'Reducción' para continuar.\n\n")
+            self.result_text.insert('end', "📋 Primeras 20 combinaciones:\n\n")
             
             for i, comb_str in enumerate(combinaciones_str[:20]):
                 self.result_text.insert('end', f"{i+1}. {comb_str}\n")
@@ -771,7 +774,8 @@ class QuinielaApp:
                 self.info_quiniela_text.config(state='normal')
                 self.info_quiniela_text.delete(1.0, 'end')
                 self.info_quiniela_text.insert('end', 
-                    "⚠️ No hay quiniela generada. Ve a la pestaña 'Generador' y genera una quiniela primero.")
+                    "⚠️ PASO 1: Ve a la pestaña 'Generador' y genera una quiniela.\n"
+                    "⚠️ PASO 2: Vuelve aquí para aplicar reducción sobre esa quiniela.")
                 self.info_quiniela_text.config(state='disabled')
                 return
             
@@ -783,8 +787,10 @@ class QuinielaApp:
             
             self.info_quiniela_text.config(state='normal')
             self.info_quiniela_text.delete(1.0, 'end')
-            info = f"Quiniela lista para reducir: {num_dobles} dobles, {num_triples} triples, " \
-                   f"{num_combinaciones} combinaciones, {coste_total:.2f} €"
+            info = f"✅ Quiniela GENERADA lista para reducir:\n"
+            info += f"   • Dobles: {num_dobles} | Triples: {num_triples} | Total: {num_combinaciones} combinaciones\n"
+            info += f"   • Coste actual: {coste_total:.2f} €\n"
+            info += f"   ↓ Configura abajo y pulsa 'Aplicar Reducción'"
             self.info_quiniela_text.insert('end', info)
             self.info_quiniela_text.config(state='disabled')
             
