@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List
 from tkinter import Tk, ttk, messagebox, StringVar, IntVar, DoubleVar, BooleanVar, filedialog
 from tkinter.scrolledtext import ScrolledText
+from tkinter import Canvas, Scrollbar, Label as TkLabel
 from datetime import datetime
 
 from src.config import DB_PATH, PRECIO_APUESTA, PRECIO_REDUCCION
@@ -193,12 +194,29 @@ class QuinielaApp:
         ttk.Button(export_frame, text="Exportar PDF", 
                   command=self.exportar_pdf).pack(side='left', padx=5)
         
-        # Resultado
-        result_frame = ttk.LabelFrame(frame, text="Resultado", padding=10)
+        # Resultado - Tabla visual tipo quiniela real
+        result_frame = ttk.LabelFrame(frame, text="Quiniela Generada", padding=10)
         result_frame.pack(fill='both', expand=True, pady=5)
         
-        self.result_text = ScrolledText(result_frame, height=15, wrap='word')
-        self.result_text.pack(fill='both', expand=True)
+        # Frame para tabla visual
+        table_frame = ttk.Frame(result_frame)
+        table_frame.pack(fill='both', expand=True)
+        
+        # Canvas para scroll
+        canvas_container = ttk.Frame(table_frame)
+        canvas_container.pack(fill='both', expand=True)
+        
+        self.quiniela_canvas = ttk.Frame(canvas_container)
+        self.quiniela_canvas.pack(fill='both', expand=True)
+        
+        # Frame interno para la tabla
+        self.quiniela_table_frame = ttk.Frame(self.quiniela_canvas)
+        self.quiniela_table_frame.pack(fill='both', expand=True)
+        
+        # Texto de resumen (oculto por defecto, se mostrará cuando haya quiniela)
+        self.result_text = ScrolledText(result_frame, height=5, wrap='word')
+        self.result_text.pack(fill='x', pady=(5, 0))
+        self.result_text.pack_forget()  # Oculto por defecto
         
         # Variables para almacenar quiniela actual
         self.combinaciones_actuales = []
@@ -260,10 +278,22 @@ class QuinielaApp:
         ttk.Button(frame, text="Aplicar Reducción", 
                   command=self.aplicar_reduccion).pack(pady=10)
         
-        # Resultado
-        reduccion_result = ScrolledText(frame, height=10, wrap='word')
-        reduccion_result.pack(fill='both', expand=True)
-        self.reduccion_result = reduccion_result
+        # Resultado - Tabla visual tipo quiniela
+        reduccion_result_frame = ttk.LabelFrame(frame, text="Quiniela Reducida", padding=10)
+        reduccion_result_frame.pack(fill='both', expand=True, pady=5)
+        
+        # Frame para tabla visual
+        reduccion_table_frame = ttk.Frame(reduccion_result_frame)
+        reduccion_table_frame.pack(fill='both', expand=True)
+        
+        # Frame interno para la tabla de reducción
+        self.reduccion_table_frame = ttk.Frame(reduccion_table_frame)
+        self.reduccion_table_frame.pack(fill='both', expand=True)
+        
+        # Texto de resumen
+        self.reduccion_result = ScrolledText(reduccion_result_frame, height=5, wrap='word')
+        self.reduccion_result.pack(fill='x', pady=(5, 0))
+        self.reduccion_result.pack_forget()  # Oculto por defecto
         
         self.toggle_tipo_reduccion()
 
@@ -639,20 +669,14 @@ class QuinielaApp:
             self.triples_actuales = triples
             self.combinaciones_numericas = combinaciones
             
-            # Mostrar resultado
-            self.result_text.delete(1.0, 'end')
-            self.result_text.insert('end', f"✅ Quiniela Generada Exitosamente\n\n")
-            self.result_text.insert('end', f"📊 Resumen:\n")
-            self.result_text.insert('end', f"   • Dobles: {num_dobles} en posiciones {dobles}\n")
-            self.result_text.insert('end', f"   • Triples: {num_triples} en posiciones {triples}\n")
-            self.result_text.insert('end', f"   • Número de apuestas: {num_apuestas}\n")
-            self.result_text.insert('end', f"   • Coste total: {coste:.2f} €\n\n")
-            self.result_text.insert('end', "➡️ Esta quiniela está LISTA para aplicar reducción\n")
-            self.result_text.insert('end', "   Ve a la pestaña 'Reducción' para continuar.\n\n")
-            self.result_text.insert('end', "📋 Primeras 20 combinaciones:\n\n")
+            # Renderizar tabla visual tipo quiniela real
+            self._renderizar_tabla_quiniela(self.quiniela_table_frame, dobles, triples)
             
-            for i, comb_str in enumerate(combinaciones_str[:20]):
-                self.result_text.insert('end', f"{i+1}. {comb_str}\n")
+            # Mostrar resumen en texto
+            self.result_text.pack(fill='x', pady=(5, 0))  # Mostrar texto de resumen
+            self.result_text.delete(1.0, 'end')
+            self.result_text.insert('end', f"✅ Quiniela Generada: {num_dobles} dobles, {num_triples} triples | {num_apuestas} apuestas | {coste:.2f} €")
+            self.result_text.insert('end', f" | ➡️ LISTA para aplicar reducción en pestaña 'Reducción'\n")
             
             # Actualizar información en pestaña de reducción
             self._actualizar_info_reduccion()
@@ -696,20 +720,14 @@ class QuinielaApp:
                 
                 info = self.reductor.REDUCCIONES_OFICIALES[reduc_tipo]
                 
+                # Renderizar tabla visual tipo quiniela real (mantiene mismos dobles/triples)
+                self._renderizar_tabla_quiniela(self.reduccion_table_frame, self.dobles_actuales, self.triples_actuales)
+                
+                # Mostrar resumen en texto
+                self.reduccion_result.pack(fill='x', pady=(5, 0))  # Mostrar texto de resumen
                 self.reduccion_result.delete(1.0, 'end')
-                self.reduccion_result.insert('end', f"Reducción Oficial {reduc_tipo}\n\n")
-                self.reduccion_result.insert('end', f"Descripción: {info['descripcion']}\n")
-                self.reduccion_result.insert('end', f"Total original: {len(self.combinaciones_actuales)}\n")
-                self.reduccion_result.insert('end', f"Apuestas reducidas: {len(reducidas)}\n")
-                self.reduccion_result.insert('end', f"Coste: {len(reducidas) * PRECIO_APUESTA:.2f} €\n\n")
-                
-                # Mostrar garantías
-                for aciertos, count in info['garantias'].items():
-                    self.reduccion_result.insert('end', f"Aciertos {aciertos}: {count} apuestas\n")
-                
-                self.reduccion_result.insert('end', "\n--- Combinaciones ---\n\n")
-                for i, comb_str in enumerate(reducidas_str[:20], 1):
-                    self.reduccion_result.insert('end', f"{i}. {comb_str}\n")
+                self.reduccion_result.insert('end', f"✅ Reducción Oficial {reduc_tipo}: {len(self.combinaciones_actuales)} → {len(reducidas)} apuestas | {len(reducidas) * PRECIO_APUESTA:.2f} €")
+                self.reduccion_result.insert('end', f" | Descripción: {info['descripcion']}\n")
 
                 self._registrar_comparacion(
                     f"Reducida Oficial {reduc_tipo}",
@@ -741,17 +759,14 @@ class QuinielaApp:
                     comb_str = self.reductor.convertir_combinacion_a_string(comb)
                     reducidas_str.append(comb_str)
                 
-                self.reduccion_result.delete(1.0, 'end')
-                self.reduccion_result.insert('end', f"Reducción Inteligente\n\n")
-                self.reduccion_result.insert('end', f"Total original: {len(self.combinaciones_actuales)}\n")
-                self.reduccion_result.insert('end', f"Apuestas reducidas: {len(reducidas_str)}\n")
-                self.reduccion_result.insert('end', f"Coste: {len(reducidas_str) * PRECIO_APUESTA:.2f} €\n")
-                self.reduccion_result.insert('end', f"Objetivo: {objetivo} aciertos\n")
-                self.reduccion_result.insert('end', f"Filtros aplicados: {filtros}\n\n")
+                # Renderizar tabla visual tipo quiniela real (mantiene mismos dobles/triples)
+                self._renderizar_tabla_quiniela(self.reduccion_table_frame, self.dobles_actuales, self.triples_actuales)
                 
-                self.reduccion_result.insert('end', "--- Combinaciones ---\n\n")
-                for i, comb_str in enumerate(reducidas_str[:50], 1):
-                    self.reduccion_result.insert('end', f"{i}. {comb_str}\n")
+                # Mostrar resumen en texto
+                self.reduccion_result.pack(fill='x', pady=(5, 0))  # Mostrar texto de resumen
+                self.reduccion_result.delete(1.0, 'end')
+                self.reduccion_result.insert('end', f"✅ Reducción Inteligente: {len(self.combinaciones_actuales)} → {len(reducidas_str)} apuestas | {len(reducidas_str) * PRECIO_APUESTA:.2f} €")
+                self.reduccion_result.insert('end', f" | Objetivo: {objetivo} aciertos\n")
 
                 self._registrar_comparacion(
                     "Reducida Inteligente",
@@ -765,6 +780,124 @@ class QuinielaApp:
         except Exception as e:
             logger.error(f"Error aplicando reducción: {e}")
             messagebox.showerror("Error", f"Error: {e}")
+    
+    def _renderizar_tabla_quiniela(self, frame_parent, dobles: List[int], triples: List[int]):
+        """
+        Renderizar tabla visual tipo quiniela real con cuadros 1X2 marcados
+        
+        Args:
+            frame_parent: Frame donde se renderizará la tabla
+            dobles: Lista de posiciones con dobles (0-indexed)
+            triples: Lista de posiciones con triples (0-indexed)
+        """
+        # Limpiar tabla anterior
+        for widget in frame_parent.winfo_children():
+            widget.destroy()
+        
+        if not self.partidos_actuales:
+            ttk.Label(frame_parent, text="No hay partidos cargados", font=('Arial', 10)).pack(pady=20)
+            return
+        
+        # Crear encabezado de tabla
+        header_frame = ttk.Frame(frame_parent)
+        header_frame.pack(fill='x', pady=(0, 5))
+        
+        # Encabezados de columnas
+        ttk.Label(header_frame, text="#", font=('Arial', 9, 'bold'), width=4).grid(row=0, column=0, padx=2)
+        ttk.Label(header_frame, text="Partido", font=('Arial', 9, 'bold'), width=35).grid(row=0, column=1, padx=2)
+        ttk.Label(header_frame, text="1", font=('Arial', 9, 'bold'), width=4).grid(row=0, column=2, padx=2)
+        ttk.Label(header_frame, text="X", font=('Arial', 9, 'bold'), width=4).grid(row=0, column=3, padx=2)
+        ttk.Label(header_frame, text="2", font=('Arial', 9, 'bold'), width=4).grid(row=0, column=4, padx=2)
+        ttk.Label(header_frame, text="Tipo", font=('Arial', 9, 'bold'), width=12).grid(row=0, column=5, padx=2)
+        
+        # Separador
+        ttk.Separator(frame_parent, orient='horizontal').pack(fill='x', pady=5)
+        
+        # Crear filas para cada partido
+        for i, partido in enumerate(self.partidos_actuales[:14]):  # Solo los 14 primeros
+            row_frame = ttk.Frame(frame_parent)
+            row_frame.pack(fill='x', pady=2)
+            
+            # Número de partido
+            num_label = ttk.Label(row_frame, text=str(i+1), font=('Arial', 9), width=4, anchor='center')
+            num_label.grid(row=0, column=0, padx=2, sticky='w')
+            
+            # Partido (Local vs Visitante)
+            partido_text = f"{partido.get('local', 'Local')} vs {partido.get('visitante', 'Visitante')}"
+            partido_label = ttk.Label(row_frame, text=partido_text, font=('Arial', 9), width=35, anchor='w')
+            partido_label.grid(row=0, column=1, padx=2, sticky='w')
+            
+            # Determinar tipo: single, doble o triple
+            es_triple = i in triples
+            es_doble = i in dobles
+            
+            # Obtener pronóstico para determinar single más probable
+            signo_single = None
+            if not es_triple and not es_doble:
+                pronostico = self.db.get_pronostico(partido['id'])
+                if pronostico:
+                    prob_1, prob_x, prob_2, recomendacion, _ = pronostico
+                    if prob_1 >= prob_x and prob_1 >= prob_2:
+                        signo_single = '1'
+                    elif prob_x >= prob_2:
+                        signo_single = 'X'
+                    else:
+                        signo_single = '2'
+                else:
+                    # Por defecto, 1
+                    signo_single = '1'
+            
+            # Cuadros 1X2
+            if es_triple:
+                # Triple: marcar los 3
+                tipo_text = "TRIPLE"
+                bg_color = '#ffcccc'  # Rojo claro para triples
+                marca_1 = True
+                marca_X = True
+                marca_2 = True
+            elif es_doble:
+                # Doble: marcar 1 y X (mostrar ambas opciones)
+                tipo_text = "DOBLE"
+                bg_color = '#ffffcc'  # Amarillo claro para dobles
+                marca_1 = True
+                marca_X = True
+                marca_2 = False
+            else:
+                # Single: solo marcar el más probable
+                tipo_text = "SINGLE"
+                bg_color = '#ffffff'  # Blanco para singles
+                marca_1 = (signo_single == '1')
+                marca_X = (signo_single == 'X')
+                marca_2 = (signo_single == '2')
+            
+            # Cuadro 1 (usar tkinter.Label para soportar background)
+            bg_1 = '#ff0000' if marca_1 else '#ffffff'
+            fg_1 = 'white' if marca_1 else 'black'
+            cuadro1 = TkLabel(row_frame, text="1", font=('Arial', 10, 'bold'), 
+                             width=4, anchor='center', relief='raised',
+                             background=bg_1, foreground=fg_1, bd=2)
+            cuadro1.grid(row=0, column=2, padx=2, ipady=3)
+            
+            # Cuadro X
+            bg_X = '#ff0000' if marca_X else '#ffffff'
+            fg_X = 'white' if marca_X else 'black'
+            cuadroX = TkLabel(row_frame, text="X", font=('Arial', 10, 'bold'), 
+                             width=4, anchor='center', relief='raised',
+                             background=bg_X, foreground=fg_X, bd=2)
+            cuadroX.grid(row=0, column=3, padx=2, ipady=3)
+            
+            # Cuadro 2
+            bg_2 = '#ff0000' if marca_2 else '#ffffff'
+            fg_2 = 'white' if marca_2 else 'black'
+            cuadro2 = TkLabel(row_frame, text="2", font=('Arial', 10, 'bold'), 
+                             width=4, anchor='center', relief='raised',
+                             background=bg_2, foreground=fg_2, bd=2)
+            cuadro2.grid(row=0, column=4, padx=2, ipady=3)
+            
+            # Tipo (usar tkinter.Label para soportar background)
+            tipo_label = TkLabel(row_frame, text=tipo_text, font=('Arial', 9, 'bold'), 
+                                 width=12, anchor='center', background=bg_color, bd=1)
+            tipo_label.grid(row=0, column=5, padx=2, ipady=3)
     
     def _actualizar_info_reduccion(self):
         """Actualizar información de quiniela previa en pestaña de reducción"""
