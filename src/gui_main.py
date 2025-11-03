@@ -289,22 +289,50 @@ class QuinielaApp:
         ttk.Button(frame, text="Aplicar Reducción", 
                   command=self.aplicar_reduccion).pack(pady=10)
         
-        # Resultado - Tabla visual tipo quiniela
-        reduccion_result_frame = ttk.LabelFrame(frame, text="Quiniela Reducida", padding=10)
-        reduccion_result_frame.pack(fill='both', expand=True, pady=5)
+        # Resultado - Tabla visual tipo quiniela reducida (resumen)
+        reduccion_result_frame = ttk.LabelFrame(frame, text="📊 Quiniela Reducida - Resumen", padding=10)
+        reduccion_result_frame.pack(fill='x', pady=5)
         
-        # Frame para tabla visual
+        # Frame para tabla visual resumida
         reduccion_table_frame = ttk.Frame(reduccion_result_frame)
         reduccion_table_frame.pack(fill='both', expand=True)
         
-        # Frame interno para la tabla de reducción
+        # Frame interno para la tabla de reducción (resumen con dobles/triples)
         self.reduccion_table_frame = ttk.Frame(reduccion_table_frame)
         self.reduccion_table_frame.pack(fill='both', expand=True)
         
         # Texto de resumen
-        self.reduccion_result = ScrolledText(reduccion_result_frame, height=5, wrap='word')
+        self.reduccion_result = ScrolledText(reduccion_result_frame, height=3, wrap='word')
         self.reduccion_result.pack(fill='x', pady=(5, 0))
         self.reduccion_result.pack_forget()  # Oculto por defecto
+        
+        # Frame para quinielas individuales después de la reducción
+        quinielas_individuales_frame = ttk.LabelFrame(frame, text="🎯 Quinielas Individuales (resultado de la reducción)", padding=10)
+        quinielas_individuales_frame.pack(fill='both', expand=True, pady=5)
+        
+        # Canvas con scrollbar para quinielas individuales
+        canvas_frame = ttk.Frame(quinielas_individuales_frame)
+        canvas_frame.pack(fill='both', expand=True)
+        
+        # Canvas para scroll
+        canvas_individuales = Canvas(canvas_frame, bg='white')
+        scrollbar_individuales = ttk.Scrollbar(canvas_frame, orient='vertical', command=canvas_individuales.yview)
+        self.frame_individuales = ttk.Frame(canvas_individuales)
+        
+        canvas_individuales.create_window((0, 0), window=self.frame_individuales, anchor='nw')
+        canvas_individuales.configure(yscrollcommand=scrollbar_individuales.set)
+        
+        canvas_individuales.pack(side='left', fill='both', expand=True)
+        scrollbar_individuales.pack(side='right', fill='y')
+        
+        def configure_canvas(event):
+            canvas_individuales.configure(scrollregion=canvas_individuales.bbox('all'))
+        
+        self.frame_individuales.bind('<Configure>', configure_canvas)
+        canvas_individuales.bind('<Configure>', lambda e: canvas_individuales.itemconfig(canvas_individuales.find_all()[0], width=e.width))
+        
+        self.canvas_individuales = canvas_individuales
+        self.combinaciones_reducidas_actuales = []  # Almacenar combinaciones reducidas
         
         self.toggle_tipo_reduccion()
 
@@ -340,39 +368,28 @@ class QuinielaApp:
         ttk.Label(frame, textvariable=self.comparacion_summary_var,
                   font=('Arial', 11, 'bold')).pack(fill='x', pady=(0, 10))
 
-        tree_frame = ttk.Frame(frame)
-        tree_frame.pack(fill='both', expand=True)
-
-        columns = ('partido', 'apuesta', 'resultado', 'estado')
-        self.comparacion_tree = ttk.Treeview(
-            tree_frame,
-            columns=('num',) + columns,
-            show='headings',
-            height=18
-        )
-        self.comparacion_tree.heading('num', text='#')
-        self.comparacion_tree.column('num', width=40, anchor='center')
-        self.comparacion_tree.heading('partido', text='Partido')
-        self.comparacion_tree.column('partido', width=320)
-        self.comparacion_tree.heading('apuesta', text='Apuesta')
-        self.comparacion_tree.column('apuesta', width=120, anchor='center')
-        self.comparacion_tree.heading('resultado', text='Resultado real')
-        self.comparacion_tree.column('resultado', width=140, anchor='center')
-        self.comparacion_tree.heading('estado', text='Estado')
-        self.comparacion_tree.column('estado', width=140, anchor='center')
-
-        scroll = ttk.Scrollbar(tree_frame, orient='vertical', command=self.comparacion_tree.yview)
-        self.comparacion_tree.configure(yscrollcommand=scroll.set)
-        self.comparacion_tree.pack(side='left', fill='both', expand=True)
-        scroll.pack(side='right', fill='y')
-
-        self.comparacion_tree.tag_configure('acierto', background='#d4edda')
-        self.comparacion_tree.tag_configure('fallo', background='#f8d7da')
-        self.comparacion_tree.tag_configure('pendiente', background='#fff3cd')
+        # Frame para tabla visual con cuadros 1X2
+        canvas_comparacion = Canvas(frame, bg='white')
+        scrollbar_comparacion = ttk.Scrollbar(frame, orient='vertical', command=canvas_comparacion.yview)
+        self.frame_comparacion_table = ttk.Frame(canvas_comparacion)
+        
+        canvas_comparacion.create_window((0, 0), window=self.frame_comparacion_table, anchor='nw')
+        canvas_comparacion.configure(yscrollcommand=scrollbar_comparacion.set)
+        
+        def configure_canvas_comp(event):
+            canvas_comparacion.configure(scrollregion=canvas_comparacion.bbox('all'))
+        
+        self.frame_comparacion_table.bind('<Configure>', configure_canvas_comp)
+        canvas_comparacion.bind('<Configure>', lambda e: canvas_comparacion.itemconfig(canvas_comparacion.find_all()[0], width=e.width))
+        
+        canvas_comparacion.pack(side='left', fill='both', expand=True)
+        scrollbar_comparacion.pack(side='right', fill='y')
+        
+        self.canvas_comparacion = canvas_comparacion
 
         ttk.Label(
             frame,
-            text="Aciertos en verde, fallos en rojo, pendientes en ámbar."
+            text="🟢 Aciertos en verde | 🔴 Fallos en rojo | ⚠️ Pendientes en gris"
         ).pack(fill='x', pady=(8, 0))
     
     def toggle_tipo_reduccion(self):
@@ -757,6 +774,10 @@ class QuinielaApp:
                 # Renderizar tabla visual tipo quiniela real (mantiene mismos dobles/triples)
                 self._renderizar_tabla_quiniela(self.reduccion_table_frame, self.dobles_actuales, self.triples_actuales)
                 
+                # Renderizar quinielas individuales
+                self.combinaciones_reducidas_actuales = reducidas
+                self._renderizar_quinielas_individuales(reducidas)
+                
                 # Mostrar resumen en texto
                 self.reduccion_result.pack(fill='x', pady=(5, 0))  # Mostrar texto de resumen
                 self.reduccion_result.delete(1.0, 'end')
@@ -795,6 +816,10 @@ class QuinielaApp:
                 
                 # Renderizar tabla visual tipo quiniela real (mantiene mismos dobles/triples)
                 self._renderizar_tabla_quiniela(self.reduccion_table_frame, self.dobles_actuales, self.triples_actuales)
+                
+                # Renderizar quinielas individuales
+                self.combinaciones_reducidas_actuales = reducidas_inteligentes
+                self._renderizar_quinielas_individuales(reducidas_inteligentes)
                 
                 # Mostrar resumen en texto
                 self.reduccion_result.pack(fill='x', pady=(5, 0))  # Mostrar texto de resumen
@@ -933,6 +958,93 @@ class QuinielaApp:
                                  width=12, anchor='center', background=bg_color, bd=1)
             tipo_label.grid(row=0, column=5, padx=2, ipady=3)
     
+    def _renderizar_quinielas_individuales(self, combinaciones: List[List[int]]):
+        """
+        Renderizar quinielas individuales después de la reducción
+        
+        Args:
+            combinaciones: Lista de combinaciones numéricas (cada una es List[int] con 1,2,3)
+        """
+        # Limpiar frame anterior
+        for widget in self.frame_individuales.winfo_children():
+            widget.destroy()
+        
+        if not combinaciones:
+            ttk.Label(self.frame_individuales, text="No hay quinielas reducidas", 
+                     font=('Arial', 10)).pack(pady=20)
+            return
+        
+        if not self.partidos_actuales:
+            ttk.Label(self.frame_individuales, text="No hay partidos cargados", 
+                     font=('Arial', 10)).pack(pady=20)
+            return
+        
+        # Mostrar cada quiniela individual
+        for idx, comb in enumerate(combinaciones, 1):
+            # Frame para cada quiniela individual
+            quiniela_frame = ttk.LabelFrame(self.frame_individuales, 
+                                           text=f"Quiniela {idx}", 
+                                           padding=10)
+            quiniela_frame.pack(fill='x', pady=5, padx=5)
+            
+            # Encabezado de columnas para cada quiniela
+            header_row = ttk.Frame(quiniela_frame)
+            header_row.pack(fill='x', pady=(0, 5))
+            
+            ttk.Label(header_row, text="#", font=('Arial', 8, 'bold'), width=3).grid(row=0, column=0, padx=1)
+            ttk.Label(header_row, text="Partido", font=('Arial', 8, 'bold'), width=28).grid(row=0, column=1, padx=1)
+            ttk.Label(header_row, text="1", font=('Arial', 8, 'bold'), width=4).grid(row=0, column=2, padx=1)
+            ttk.Label(header_row, text="X", font=('Arial', 8, 'bold'), width=4).grid(row=0, column=3, padx=1)
+            ttk.Label(header_row, text="2", font=('Arial', 8, 'bold'), width=4).grid(row=0, column=4, padx=1)
+            
+            # Separador
+            ttk.Separator(quiniela_frame, orient='horizontal').pack(fill='x', pady=2)
+            
+            # Mapeo de combinación numérica a signo
+            mapping = {1: '1', 2: 'X', 3: '2'}
+            
+            # Mostrar cada partido de esta quiniela
+            for i, partido in enumerate(self.partidos_actuales[:14]):
+                if i >= len(comb):
+                    break
+                
+                signo = mapping.get(comb[i], '-')
+                row_frame = ttk.Frame(quiniela_frame)
+                row_frame.pack(fill='x', pady=1)
+                
+                # Número
+                ttk.Label(row_frame, text=str(i+1), font=('Arial', 8), width=3, anchor='center').grid(row=0, column=0, padx=1)
+                
+                # Partido
+                partido_text = f"{partido.get('local', 'Local')} vs {partido.get('visitante', 'Visitante')}"
+                ttk.Label(row_frame, text=partido_text, font=('Arial', 8), width=28, anchor='w').grid(row=0, column=1, padx=1, sticky='w')
+                
+                # Cuadros 1X2 - marcar solo el signo elegido
+                bg_1 = '#ff6b6b' if signo == '1' else '#f0f0f0'
+                fg_1 = 'white' if signo == '1' else 'black'
+                cuadro1 = TkLabel(row_frame, text="1", font=('Arial', 9, 'bold'), 
+                                 width=4, anchor='center', relief='raised',
+                                 background=bg_1, foreground=fg_1, bd=1)
+                cuadro1.grid(row=0, column=2, padx=1, ipady=2)
+                
+                bg_X = '#ff6b6b' if signo == 'X' else '#f0f0f0'
+                fg_X = 'white' if signo == 'X' else 'black'
+                cuadroX = TkLabel(row_frame, text="X", font=('Arial', 9, 'bold'), 
+                                 width=4, anchor='center', relief='raised',
+                                 background=bg_X, foreground=fg_X, bd=1)
+                cuadroX.grid(row=0, column=3, padx=1, ipady=2)
+                
+                bg_2 = '#ff6b6b' if signo == '2' else '#f0f0f0'
+                fg_2 = 'white' if signo == '2' else 'black'
+                cuadro2 = TkLabel(row_frame, text="2", font=('Arial', 9, 'bold'), 
+                                 width=4, anchor='center', relief='raised',
+                                 background=bg_2, foreground=fg_2, bd=1)
+                cuadro2.grid(row=0, column=4, padx=1, ipady=2)
+        
+        # Actualizar scrollregion
+        self.frame_individuales.update_idletasks()
+        self.canvas_individuales.configure(scrollregion=self.canvas_individuales.bbox('all'))
+    
     def _actualizar_info_reduccion(self):
         """Actualizar información de quiniela previa en pestaña de reducción"""
         try:
@@ -1050,7 +1162,8 @@ class QuinielaApp:
         try:
             # Limpiar si no hay datos
             if not self.comparacion_sets:
-                self.comparacion_tree.delete(*self.comparacion_tree.get_children())
+                for widget in self.frame_comparacion_table.winfo_children():
+                    widget.destroy()
                 self.comparacion_summary_var.set("Genera una quiniela para iniciar la comparación.")
                 return
 
@@ -1061,7 +1174,8 @@ class QuinielaApp:
 
             dataset = self.comparacion_sets.get(seleccion)
             if not dataset:
-                self.comparacion_tree.delete(*self.comparacion_tree.get_children())
+                for widget in self.frame_comparacion_table.winfo_children():
+                    widget.destroy()
                 self.comparacion_summary_var.set("Selecciona un conjunto para comparar.")
                 return
 
@@ -1090,7 +1204,23 @@ class QuinielaApp:
 
             signos_por_partido = self._calcular_signos_por_partido(dataset.get('combinaciones', []))
 
-            self.comparacion_tree.delete(*self.comparacion_tree.get_children())
+            # Limpiar frame de comparación
+            for widget in self.frame_comparacion_table.winfo_children():
+                widget.destroy()
+
+            # Crear encabezado
+            header_frame = ttk.Frame(self.frame_comparacion_table)
+            header_frame.pack(fill='x', pady=(0, 5))
+            
+            ttk.Label(header_frame, text="#", font=('Arial', 9, 'bold'), width=4).grid(row=0, column=0, padx=2)
+            ttk.Label(header_frame, text="Partido", font=('Arial', 9, 'bold'), width=35).grid(row=0, column=1, padx=2)
+            ttk.Label(header_frame, text="1", font=('Arial', 9, 'bold'), width=4).grid(row=0, column=2, padx=2)
+            ttk.Label(header_frame, text="X", font=('Arial', 9, 'bold'), width=4).grid(row=0, column=3, padx=2)
+            ttk.Label(header_frame, text="2", font=('Arial', 9, 'bold'), width=4).grid(row=0, column=4, padx=2)
+            ttk.Label(header_frame, text="Resultado", font=('Arial', 9, 'bold'), width=15).grid(row=0, column=5, padx=2)
+            ttk.Label(header_frame, text="Estado", font=('Arial', 9, 'bold'), width=12).grid(row=0, column=6, padx=2)
+            
+            ttk.Separator(self.frame_comparacion_table, orient='horizontal').pack(fill='x', pady=5)
 
             aciertos = fallos = pendientes = 0
 
@@ -1099,7 +1229,7 @@ class QuinielaApp:
 
             for idx in range(1, partidos_a_mostrar + 1):
                 partido_info = partidos_map.get(idx, {})
-                descripcion = f"{idx}. {partido_info.get('local', 'N/D')} vs {partido_info.get('visitante', 'N/D')}"
+                descripcion = f"{partido_info.get('local', 'N/D')} vs {partido_info.get('visitante', 'N/D')}"
 
                 signos = signos_por_partido[idx - 1] if idx - 1 < len(signos_por_partido) else ''
 
@@ -1118,24 +1248,88 @@ class QuinielaApp:
                 if idx > 14:
                     signos = ''  # Pleno al 15 o adicionales
 
+                # Determinar color de fondo de la fila
                 if signo_real and signos and signo_real in signos:
-                    tag = 'acierto'
+                    fila_bg = '#d4edda'  # Verde claro para acierto
                     aciertos += 1
+                    es_acierto = True
                 elif signo_real and signos and signo_real not in signos:
-                    tag = 'fallo'
+                    fila_bg = '#f8d7da'  # Rojo claro para fallo
                     fallos += 1
+                    es_acierto = False
                 else:
-                    tag = 'pendiente'
+                    fila_bg = '#e9ecef'  # Gris para pendiente
                     pendientes += 1
+                    es_acierto = None
 
                 if live_info.get('minuto') and estado.lower() != 'final':
                     estado = f"En juego {live_info['minuto']}"
 
-                self.comparacion_tree.insert(
-                    '', 'end',
-                    values=(idx, descripcion, signos or '-', resultado_real, estado),
-                    tags=(tag,)
-                )
+                # Crear fila visual
+                row_frame = ttk.Frame(self.frame_comparacion_table)
+                row_frame.pack(fill='x', pady=2)
+                
+                # Número
+                num_label = TkLabel(row_frame, text=str(idx), font=('Arial', 9), width=4, 
+                                   anchor='center', background=fila_bg, bd=1)
+                num_label.grid(row=0, column=0, padx=2, ipady=3, sticky='ew')
+                
+                # Partido
+                partido_label = TkLabel(row_frame, text=descripcion, font=('Arial', 9), width=35, 
+                                       anchor='w', background=fila_bg, bd=1)
+                partido_label.grid(row=0, column=1, padx=2, ipady=3, sticky='ew')
+                
+                # Cuadros 1X2
+                marca_1 = '1' in signos if signos else False
+                marca_X = 'X' in signos if signos else False
+                marca_2 = '2' in signos if signos else False
+                
+                # Color de los cuadros según acierto/fallo
+                if es_acierto is True:
+                    bg_cuadro_marcado = '#28a745'  # Verde para acierto
+                    fg_cuadro_marcado = 'white'
+                elif es_acierto is False and signo_real:
+                    # Si falló y el signo marcado no es el correcto
+                    bg_cuadro_marcado = '#dc3545'  # Rojo para fallo
+                    fg_cuadro_marcado = 'white'
+                else:
+                    bg_cuadro_marcado = '#ffc107'  # Amarillo para pendiente/marcado
+                    fg_cuadro_marcado = 'black'
+                
+                bg_1 = bg_cuadro_marcado if marca_1 else '#f0f0f0'
+                fg_1 = fg_cuadro_marcado if marca_1 else 'black'
+                cuadro1 = TkLabel(row_frame, text="1", font=('Arial', 10, 'bold'), 
+                                 width=4, anchor='center', relief='raised',
+                                 background=bg_1, foreground=fg_1, bd=2)
+                cuadro1.grid(row=0, column=2, padx=2, ipady=3)
+                
+                bg_X = bg_cuadro_marcado if marca_X else '#f0f0f0'
+                fg_X = fg_cuadro_marcado if marca_X else 'black'
+                cuadroX = TkLabel(row_frame, text="X", font=('Arial', 10, 'bold'), 
+                                 width=4, anchor='center', relief='raised',
+                                 background=bg_X, foreground=fg_X, bd=2)
+                cuadroX.grid(row=0, column=3, padx=2, ipady=3)
+                
+                bg_2 = bg_cuadro_marcado if marca_2 else '#f0f0f0'
+                fg_2 = fg_cuadro_marcado if marca_2 else 'black'
+                cuadro2 = TkLabel(row_frame, text="2", font=('Arial', 10, 'bold'), 
+                                 width=4, anchor='center', relief='raised',
+                                 background=bg_2, foreground=fg_2, bd=2)
+                cuadro2.grid(row=0, column=4, padx=2, ipady=3)
+                
+                # Resultado
+                resultado_label = TkLabel(row_frame, text=resultado_real, font=('Arial', 9), width=15, 
+                                        anchor='center', background=fila_bg, bd=1)
+                resultado_label.grid(row=0, column=5, padx=2, ipady=3)
+                
+                # Estado
+                estado_label = TkLabel(row_frame, text=estado, font=('Arial', 9), width=12, 
+                                      anchor='center', background=fila_bg, bd=1)
+                estado_label.grid(row=0, column=6, padx=2, ipady=3)
+            
+            # Actualizar scrollregion
+            self.frame_comparacion_table.update_idletasks()
+            self.canvas_comparacion.configure(scrollregion=self.canvas_comparacion.bbox('all'))
 
             self.comparacion_summary_var.set(
                 f"{seleccion}: {aciertos} aciertos · {fallos} fallos · {pendientes} pendientes"
