@@ -247,63 +247,30 @@ class QuinielaApp:
                                            font=('Arial', 10), foreground='red')
         self.info_quiniela_text.pack(pady=10)
         
-        # Tipo de reducción
-        tipo_frame = ttk.LabelFrame(frame, text="Tipo de Reducción", padding=10)
-        tipo_frame.pack(fill='x', pady=5)
+        # Configuración de Reducción Inteligente (único método)
+        config_frame = ttk.LabelFrame(frame, text="Reducción Inteligente", padding=10)
+        config_frame.pack(fill='x', pady=5)
         
-        self.tipo_reduccion = StringVar(value="oficial")
-        ttk.Radiobutton(tipo_frame, text="Oficial", variable=self.tipo_reduccion, 
-                       value="oficial", command=self.toggle_tipo_reduccion).pack(side='left', padx=10)
-        ttk.Radiobutton(tipo_frame, text="Inteligente", variable=self.tipo_reduccion, 
-                       value="inteligente", command=self.toggle_tipo_reduccion).pack(side='left', padx=10)
-        
-        # Configuración oficial
-        self.config_oficial_frame = ttk.LabelFrame(frame, text="Reducción Oficial", padding=10)
-        self.config_oficial_frame.pack(fill='x', pady=5)
-        
-        self.reduccion_oficial_var = StringVar(value="1")
-        for i in range(1, 7):
-            radio = ttk.Radiobutton(self.config_oficial_frame, text=f"Reducción {i}", 
-                          variable=self.reduccion_oficial_var, value=str(i))
-            radio.pack(side='left', padx=5)
-            radio.grid_info = {}  # Agregar atributo para compatibilidad con grid_remove
-        
-        # Configuración inteligente
-        self.config_inteligente_frame = ttk.LabelFrame(frame, text="Reducción Inteligente", padding=10)
-        # NO hacer pack aquí - se gestiona en toggle_tipo_reduccion
-        
-        ttk.Label(self.config_inteligente_frame, text="Objetivo de aciertos:").grid(row=0, column=0, sticky='w', padx=5)
+        ttk.Label(config_frame, text="Objetivo de aciertos:").grid(row=0, column=0, sticky='w', padx=5)
         self.objetivo_aciertos = IntVar(value=13)
-        ttk.Spinbox(self.config_inteligente_frame, from_=11, to=14, 
+        ttk.Spinbox(config_frame, from_=11, to=14, 
                    textvariable=self.objetivo_aciertos, width=5).grid(row=0, column=1, padx=5)
         
         self.filtro_consecutivos = BooleanVar(value=True)
-        ttk.Checkbutton(self.config_inteligente_frame, text="Limitar signos consecutivos", 
+        ttk.Checkbutton(config_frame, text="Limitar signos consecutivos", 
                        variable=self.filtro_consecutivos).grid(row=0, column=2, sticky='w', padx=5)
         
         self.filtro_extremos = BooleanVar(value=True)
-        ttk.Checkbutton(self.config_inteligente_frame, text="Descartar combinaciones extremas", 
+        ttk.Checkbutton(config_frame, text="Descartar combinaciones extremas", 
                        variable=self.filtro_extremos).grid(row=1, column=2, sticky='w', padx=5)
         
         # Botón reducir
         ttk.Button(frame, text="Aplicar Reducción", 
                   command=self.aplicar_reduccion).pack(pady=10)
         
-        # Resultado - Tabla visual tipo quiniela reducida (resumen)
-        reduccion_result_frame = ttk.LabelFrame(frame, text="📊 Quiniela Reducida - Resumen", padding=10)
-        reduccion_result_frame.pack(fill='x', pady=5)
-        
-        # Frame para tabla visual resumida
-        reduccion_table_frame = ttk.Frame(reduccion_result_frame)
-        reduccion_table_frame.pack(fill='both', expand=True)
-        
-        # Frame interno para la tabla de reducción (resumen con dobles/triples)
-        self.reduccion_table_frame = ttk.Frame(reduccion_table_frame)
-        self.reduccion_table_frame.pack(fill='both', expand=True)
-        
-        # Texto de resumen
-        self.reduccion_result = ScrolledText(reduccion_result_frame, height=3, wrap='word')
-        self.reduccion_result.pack(fill='x', pady=(5, 0))
+        # Texto de resumen (info de la reducción)
+        self.reduccion_result = ScrolledText(frame, height=2, wrap='word')
+        self.reduccion_result.pack(fill='x', pady=5)
         self.reduccion_result.pack_forget()  # Oculto por defecto
         
         # Frame para quinielas individuales después de la reducción
@@ -325,25 +292,31 @@ class QuinielaApp:
         canvas_individuales.pack(side='left', fill='both', expand=True)
         scrollbar_individuales.pack(side='right', fill='y')
         
-        def configure_canvas(event):
+        def configure_canvas_scroll(event):
+            """Actualizar scrollregion cuando el frame interno cambia de tamaño"""
             canvas_individuales.configure(scrollregion=canvas_individuales.bbox('all'))
         
         def configure_canvas_width(event):
-            # Actualizar width del window item de forma segura
+            """Actualizar width del window item cuando el canvas cambia de tamaño"""
             try:
-                if window_id:
-                    canvas_individuales.itemconfig(window_id, width=event.width)
+                canvas_width = event.width
+                # Configurar el window item para que use todo el ancho del canvas
+                canvas_individuales.itemconfig(window_id, width=canvas_width)
             except Exception:
                 pass
         
-        self.frame_individuales.bind('<Configure>', configure_canvas)
+        # Configurar width inicial del window item
+        canvas_individuales.update_idletasks()
+        initial_width = canvas_individuales.winfo_width()
+        if initial_width > 1:
+            canvas_individuales.itemconfig(window_id, width=initial_width)
+        
+        self.frame_individuales.bind('<Configure>', configure_canvas_scroll)
         canvas_individuales.bind('<Configure>', configure_canvas_width)
         self.canvas_individuales_window_id = window_id
         
         self.canvas_individuales = canvas_individuales
         self.combinaciones_reducidas_actuales = []  # Almacenar combinaciones reducidas
-        
-        self.toggle_tipo_reduccion()
 
     def create_comparacion_tab(self):
         """Crear pestaña de comparación con resultados reales"""
@@ -364,9 +337,10 @@ class QuinielaApp:
             header,
             state='readonly',
             width=18,
-            values=["Loterías", "EduardoLosilla"],
+            values=["EduardoLosilla", "Loterías"],
             textvariable=self.fuente_resultados_var
         )
+        self.fuente_resultados_combobox.current(0)  # EduardoLosilla por defecto
         self.fuente_resultados_combobox.pack(side='left', padx=(0, 10))
 
         ttk.Button(header, text="Actualizar en vivo",
@@ -409,19 +383,6 @@ class QuinielaApp:
             frame,
             text="🟢 Aciertos en verde | 🔴 Fallos en rojo | ⚠️ Pendientes en gris"
         ).pack(fill='x', pady=(8, 0))
-    
-    def toggle_tipo_reduccion(self):
-        """Alternar visibilidad de configuraciones según tipo"""
-        if self.tipo_reduccion.get() == "oficial":
-            # Ocultar frame inteligente
-            self.config_inteligente_frame.pack_forget()
-            # Mostrar frame oficial
-            self.config_oficial_frame.pack(fill='x', pady=5)
-        else:
-            # Ocultar frame oficial
-            self.config_oficial_frame.pack_forget()
-            # Mostrar frame inteligente
-            self.config_inteligente_frame.pack(fill='x', pady=5)
     
     def create_analisis_tab(self):
         """Crear pestaña de análisis estadístico"""
@@ -769,90 +730,48 @@ class QuinielaApp:
                 messagebox.showwarning("Advertencia", "Primero debe generar una quiniela")
                 return
             
-            tipo = self.tipo_reduccion.get()
+            objetivo = self.objetivo_aciertos.get()
+            filtros = {
+                'limitar_consecutivos': self.filtro_consecutivos.get(),
+                'descartar_extremos': self.filtro_extremos.get()
+            }
             
-            if tipo == "oficial":
-                reduc_tipo = self.reduccion_oficial_var.get()
-                
-                # Aplicar reducción oficial sobre las combinaciones actuales
-                reducidas = self.reductor.reducir_oficial(
-                    self.dobles_actuales, 
-                    self.triples_actuales, 
-                    tipo=reduc_tipo
-                )
-                
-                # Convertir a strings
-                reducidas_str = []
-                for comb in reducidas:
-                    comb_str = self.reductor.convertir_combinacion_a_string(comb)
-                    reducidas_str.append(comb_str)
-                
-                info = self.reductor.REDUCCIONES_OFICIALES[reduc_tipo]
-                
-                # Renderizar tabla visual tipo quiniela real (mantiene mismos dobles/triples)
-                self._renderizar_tabla_quiniela(self.reduccion_table_frame, self.dobles_actuales, self.triples_actuales)
-                
-                # Renderizar quinielas individuales
-                self.combinaciones_reducidas_actuales = reducidas
-                self._renderizar_quinielas_individuales(reducidas)
-                
-                # Mostrar resumen en texto
-                self.reduccion_result.pack(fill='x', pady=(5, 0))  # Mostrar texto de resumen
-                self.reduccion_result.delete(1.0, 'end')
-                self.reduccion_result.insert('end', f"✅ Reducción Oficial {reduc_tipo}: {len(self.combinaciones_actuales)} → {len(reducidas)} apuestas | {len(reducidas) * PRECIO_APUESTA:.2f} €")
-                self.reduccion_result.insert('end', f" | Descripción: {info['descripcion']}\n")
-
-                self._registrar_comparacion(
-                    f"Reducida Oficial {reduc_tipo}",
-                    reducidas_str,
-                    self.dobles_actuales,
-                    self.triples_actuales,
-                    tipo=f"oficial_{reduc_tipo}"
-                )
-                self._refrescar_comparacion_view()
+            # Aplicar reducción inteligente con probabilidades
+            reducidas_inteligentes = self.reductor.reducir_inteligente(
+                self.dobles_actuales,
+                self.triples_actuales,
+                objetivo=objetivo,
+                filtros=filtros
+            )
             
-            else:
-                objetivo = self.objetivo_aciertos.get()
-                filtros = {
-                    'limitar_consecutivos': self.filtro_consecutivos.get(),
-                    'descartar_extremos': self.filtro_extremos.get()
-                }
-                
-                # Aplicar reducción inteligente con probabilidades
-                reducidas_inteligentes = self.reductor.reducir_inteligente(
-                    self.dobles_actuales,
-                    self.triples_actuales,
-                    objetivo=objetivo,
-                    filtros=filtros
-                )
-                
-                # Convertir a strings
-                reducidas_str = []
-                for comb in reducidas_inteligentes:
-                    comb_str = self.reductor.convertir_combinacion_a_string(comb)
-                    reducidas_str.append(comb_str)
-                
-                # Renderizar tabla visual tipo quiniela real (mantiene mismos dobles/triples)
-                self._renderizar_tabla_quiniela(self.reduccion_table_frame, self.dobles_actuales, self.triples_actuales)
-                
-                # Renderizar quinielas individuales
-                self.combinaciones_reducidas_actuales = reducidas_inteligentes
-                self._renderizar_quinielas_individuales(reducidas_inteligentes)
-                
-                # Mostrar resumen en texto
-                self.reduccion_result.pack(fill='x', pady=(5, 0))  # Mostrar texto de resumen
-                self.reduccion_result.delete(1.0, 'end')
-                self.reduccion_result.insert('end', f"✅ Reducción Inteligente: {len(self.combinaciones_actuales)} → {len(reducidas_str)} apuestas | {len(reducidas_str) * PRECIO_APUESTA:.2f} €")
-                self.reduccion_result.insert('end', f" | Objetivo: {objetivo} aciertos\n")
+            if not reducidas_inteligentes:
+                messagebox.showwarning("Advertencia", "La reducción no generó combinaciones. Revisa los filtros.")
+                return
+            
+            # Convertir a strings
+            reducidas_str = []
+            for comb in reducidas_inteligentes:
+                comb_str = self.reductor.convertir_combinacion_a_string(comb)
+                reducidas_str.append(comb_str)
+            
+            # Renderizar quinielas individuales completas
+            self.combinaciones_reducidas_actuales = reducidas_inteligentes
+            self._renderizar_quinielas_individuales(reducidas_inteligentes)
+            
+            # Mostrar resumen en texto
+            self.reduccion_result.pack(fill='x', pady=(5, 0))  # Mostrar texto de resumen
+            self.reduccion_result.delete(1.0, 'end')
+            self.reduccion_result.insert('end', f"✅ Reducción Inteligente: {len(self.combinaciones_actuales)} → {len(reducidas_str)} apuestas | {len(reducidas_str) * PRECIO_APUESTA:.2f} €")
+            self.reduccion_result.insert('end', f" | Objetivo: {objetivo} aciertos\n")
 
-                self._registrar_comparacion(
-                    "Reducida Inteligente",
-                    reducidas_str,
-                    self.dobles_actuales,
-                    self.triples_actuales,
-                    tipo=f"inteligente_{objetivo}"
-                )
-                self._refrescar_comparacion_view()
+            self._registrar_comparacion(
+                "Reducida Inteligente",
+                reducidas_str,
+                self.dobles_actuales,
+                self.triples_actuales,
+                tipo=f"inteligente_{objetivo}"
+            )
+            self._refrescar_comparacion_view()
                 
         except Exception as e:
             logger.error(f"Error aplicando reducción: {e}")
@@ -1036,12 +955,16 @@ class QuinielaApp:
             # Separador
             ttk.Separator(quiniela_frame, orient='horizontal').pack(fill='x', pady=2)
             
-            # Mostrar cada partido de esta quiniela
-            for i, partido in enumerate(self.partidos_actuales[:14]):
-                if i >= len(comb):
+            # Mostrar cada partido de esta quiniela (debe ser 14 partidos siempre)
+            num_partidos = min(14, len(comb), len(self.partidos_actuales))
+            for i in range(num_partidos):
+                if i >= len(self.partidos_actuales):
                     break
-                
-                signo = mapping.get(comb[i], '-')
+                partido = self.partidos_actuales[i]
+                if i >= len(comb):
+                    signo = '-'  # Sin signo si no hay en la combinación
+                else:
+                    signo = mapping.get(comb[i], '-')
                 row_frame = ttk.Frame(quiniela_frame)
                 row_frame.pack(fill='x', pady=1)
                 
@@ -1078,9 +1001,13 @@ class QuinielaApp:
             if idx % 10 == 0:
                 self.frame_individuales.update_idletasks()
         
-        # Actualizar scrollregion al final
+        # Actualizar scrollregion y width del canvas al final
         try:
             self.frame_individuales.update_idletasks()
+            # Asegurar que el window item tenga el ancho correcto
+            canvas_width = self.canvas_individuales.winfo_width()
+            if canvas_width > 1 and hasattr(self, 'canvas_individuales_window_id'):
+                self.canvas_individuales.itemconfig(self.canvas_individuales_window_id, width=canvas_width)
             self.canvas_individuales.configure(scrollregion=self.canvas_individuales.bbox('all'))
         except Exception:
             pass
