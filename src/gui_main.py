@@ -229,12 +229,23 @@ class QuinielaApp:
         frame = ttk.Frame(self.notebook, padding=10)
         self.notebook.add(frame, text="Reducción")
         
-        # Información de la quiniela previa
-        info_frame = ttk.LabelFrame(frame, text="⚠️ Quiniela desde Generador (aplicará reducción aquí)", padding=10)
-        info_frame.pack(fill='x', pady=5)
+        # Tabla visual de la quiniela ORIGINAL (antes de reducir)
+        quiniela_original_frame = ttk.LabelFrame(frame, text="📋 Quiniela Original (sobre la que se aplicará la reducción)", padding=10)
+        quiniela_original_frame.pack(fill='x', pady=5)
         
-        self.info_quiniela_text = ScrolledText(info_frame, height=4, wrap='word', state='disabled')
-        self.info_quiniela_text.pack(fill='x')
+        # Frame para tabla visual de quiniela original
+        original_table_container = ttk.Frame(quiniela_original_frame)
+        original_table_container.pack(fill='both', expand=True)
+        
+        # Frame interno para la tabla original
+        self.quiniela_original_table_frame = ttk.Frame(original_table_container)
+        self.quiniela_original_table_frame.pack(fill='both', expand=True)
+        
+        # Texto informativo cuando no hay quiniela
+        self.info_quiniela_text = ttk.Label(quiniela_original_frame, 
+                                           text="⚠️ Ve a la pestaña 'Generador' y genera una quiniela primero",
+                                           font=('Arial', 10), foreground='red')
+        self.info_quiniela_text.pack(pady=10)
         
         # Tipo de reducción
         tipo_frame = ttk.LabelFrame(frame, text="Tipo de Reducción", padding=10)
@@ -438,11 +449,30 @@ class QuinielaApp:
             selected_tab = event.widget.index('current')
             tab_text = event.widget.tab(selected_tab, 'text')
             
-            # Si se cambia a Reducción, actualizar info
-            if tab_text == 'Reducción':
-                self._actualizar_info_reduccion()
-            elif tab_text == 'Comparación':
-                self._refrescar_comparacion_view()
+            # Si hay una quiniela generada, refrescar las tablas visuales
+            if self.combinaciones_actuales and self.dobles_actuales is not None and self.triples_actuales is not None:
+                # Refrescar tabla en Generador si vuelves allí
+                if tab_text == 'Generador':
+                    self._renderizar_tabla_quiniela(self.quiniela_table_frame, self.dobles_actuales, self.triples_actuales)
+                
+                # Refrescar tabla original en Reducción
+                elif tab_text == 'Reducción':
+                    self._actualizar_info_reduccion()
+                    # Mostrar tabla visual de quiniela original
+                    self._renderizar_tabla_quiniela(self.quiniela_original_table_frame, self.dobles_actuales, self.triples_actuales)
+                    # Ocultar mensaje de advertencia
+                    self.info_quiniela_text.pack_forget()
+                elif tab_text == 'Comparación':
+                    self._refrescar_comparacion_view()
+            else:
+                # Si no hay quiniela generada y estás en Reducción, mostrar advertencia
+                if tab_text == 'Reducción':
+                    self._actualizar_info_reduccion()
+                    self.info_quiniela_text.pack(pady=10)
+                    # Limpiar tabla original
+                    for widget in self.quiniela_original_table_frame.winfo_children():
+                        widget.destroy()
+                        
         except Exception as e:
             logger.debug(f"Error en on_tab_changed: {e}")
     
@@ -669,7 +699,7 @@ class QuinielaApp:
             self.triples_actuales = triples
             self.combinaciones_numericas = combinaciones
             
-            # Renderizar tabla visual tipo quiniela real
+            # Renderizar tabla visual tipo quiniela real en Generador
             self._renderizar_tabla_quiniela(self.quiniela_table_frame, dobles, triples)
             
             # Mostrar resumen en texto
@@ -677,6 +707,10 @@ class QuinielaApp:
             self.result_text.delete(1.0, 'end')
             self.result_text.insert('end', f"✅ Quiniela Generada: {num_dobles} dobles, {num_triples} triples | {num_apuestas} apuestas | {coste:.2f} €")
             self.result_text.insert('end', f" | ➡️ LISTA para aplicar reducción en pestaña 'Reducción'\n")
+            
+            # Actualizar tabla visual en pestaña de reducción (quiniela original)
+            self._renderizar_tabla_quiniela(self.quiniela_original_table_frame, dobles, triples)
+            self.info_quiniela_text.pack_forget()  # Ocultar advertencia si está visible
             
             # Actualizar información en pestaña de reducción
             self._actualizar_info_reduccion()
@@ -902,30 +936,16 @@ class QuinielaApp:
     def _actualizar_info_reduccion(self):
         """Actualizar información de quiniela previa en pestaña de reducción"""
         try:
-            if not self.combinaciones_actuales:
+            if not self.combinaciones_actuales or self.dobles_actuales is None or self.triples_actuales is None:
                 # No hay quiniela generada
-                self.info_quiniela_text.config(state='normal')
-                self.info_quiniela_text.delete(1.0, 'end')
-                self.info_quiniela_text.insert('end', 
-                    "⚠️ PASO 1: Ve a la pestaña 'Generador' y genera una quiniela.\n"
-                    "⚠️ PASO 2: Vuelve aquí para aplicar reducción sobre esa quiniela.")
-                self.info_quiniela_text.config(state='disabled')
+                self.info_quiniela_text.config(text="⚠️ Ve a la pestaña 'Generador' y genera una quiniela primero")
+                self.info_quiniela_text.pack(pady=10)
                 return
             
-            # Hay quiniela generada
-            num_dobles = len(self.dobles_actuales)
-            num_triples = len(self.triples_actuales)
-            num_combinaciones = len(self.combinaciones_actuales)
-            coste_total = num_combinaciones * PRECIO_APUESTA
+            # Hay quiniela generada - ocultar mensaje de advertencia
+            self.info_quiniela_text.pack_forget()
             
-            self.info_quiniela_text.config(state='normal')
-            self.info_quiniela_text.delete(1.0, 'end')
-            info = f"✅ Quiniela GENERADA lista para reducir:\n"
-            info += f"   • Dobles: {num_dobles} | Triples: {num_triples} | Total: {num_combinaciones} combinaciones\n"
-            info += f"   • Coste actual: {coste_total:.2f} €\n"
-            info += f"   ↓ Configura abajo y pulsa 'Aplicar Reducción'"
-            self.info_quiniela_text.insert('end', info)
-            self.info_quiniela_text.config(state='disabled')
+            # La tabla visual ya se renderiza en on_tab_changed
             
         except Exception as e:
             logger.error(f"Error actualizando info reducción: {e}")
