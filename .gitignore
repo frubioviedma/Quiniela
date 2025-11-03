@@ -51,3 +51,6 @@ backup/
 
 # Temporal
 *.tmp
+
+# Directorios duplicados
+Quiniela/
