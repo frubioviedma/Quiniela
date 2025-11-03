@@ -319,7 +319,7 @@ class QuinielaApp:
         scrollbar_individuales = ttk.Scrollbar(canvas_frame, orient='vertical', command=canvas_individuales.yview)
         self.frame_individuales = ttk.Frame(canvas_individuales)
         
-        canvas_individuales.create_window((0, 0), window=self.frame_individuales, anchor='nw')
+        window_id = canvas_individuales.create_window((0, 0), window=self.frame_individuales, anchor='nw')
         canvas_individuales.configure(yscrollcommand=scrollbar_individuales.set)
         
         canvas_individuales.pack(side='left', fill='both', expand=True)
@@ -328,8 +328,17 @@ class QuinielaApp:
         def configure_canvas(event):
             canvas_individuales.configure(scrollregion=canvas_individuales.bbox('all'))
         
+        def configure_canvas_width(event):
+            # Actualizar width del window item de forma segura
+            try:
+                if window_id:
+                    canvas_individuales.itemconfig(window_id, width=event.width)
+            except Exception:
+                pass
+        
         self.frame_individuales.bind('<Configure>', configure_canvas)
-        canvas_individuales.bind('<Configure>', lambda e: canvas_individuales.itemconfig(canvas_individuales.find_all()[0], width=e.width))
+        canvas_individuales.bind('<Configure>', configure_canvas_width)
+        self.canvas_individuales_window_id = window_id
         
         self.canvas_individuales = canvas_individuales
         self.combinaciones_reducidas_actuales = []  # Almacenar combinaciones reducidas
@@ -373,14 +382,23 @@ class QuinielaApp:
         scrollbar_comparacion = ttk.Scrollbar(frame, orient='vertical', command=canvas_comparacion.yview)
         self.frame_comparacion_table = ttk.Frame(canvas_comparacion)
         
-        canvas_comparacion.create_window((0, 0), window=self.frame_comparacion_table, anchor='nw')
+        window_id_comp = canvas_comparacion.create_window((0, 0), window=self.frame_comparacion_table, anchor='nw')
         canvas_comparacion.configure(yscrollcommand=scrollbar_comparacion.set)
         
         def configure_canvas_comp(event):
             canvas_comparacion.configure(scrollregion=canvas_comparacion.bbox('all'))
         
+        def configure_canvas_comp_width(event):
+            # Actualizar width del window item de forma segura
+            try:
+                if window_id_comp:
+                    canvas_comparacion.itemconfig(window_id_comp, width=event.width)
+            except Exception:
+                pass
+        
         self.frame_comparacion_table.bind('<Configure>', configure_canvas_comp)
-        canvas_comparacion.bind('<Configure>', lambda e: canvas_comparacion.itemconfig(canvas_comparacion.find_all()[0], width=e.width))
+        canvas_comparacion.bind('<Configure>', configure_canvas_comp_width)
+        self.canvas_comparacion_window_id = window_id_comp
         
         canvas_comparacion.pack(side='left', fill='both', expand=True)
         scrollbar_comparacion.pack(side='right', fill='y')
@@ -965,9 +983,12 @@ class QuinielaApp:
         Args:
             combinaciones: Lista de combinaciones numéricas (cada una es List[int] con 1,2,3)
         """
-        # Limpiar frame anterior
-        for widget in self.frame_individuales.winfo_children():
-            widget.destroy()
+        # Limpiar frame anterior de forma segura
+        try:
+            for widget in self.frame_individuales.winfo_children():
+                widget.destroy()
+        except Exception:
+            pass
         
         if not combinaciones:
             ttk.Label(self.frame_individuales, text="No hay quinielas reducidas", 
@@ -979,8 +1000,23 @@ class QuinielaApp:
                      font=('Arial', 10)).pack(pady=20)
             return
         
-        # Mostrar cada quiniela individual
-        for idx, comb in enumerate(combinaciones, 1):
+        # LIMITAR para evitar BadAlloc: mostrar máximo 50 quinielas
+        # Si hay más, mostrar solo las primeras y un mensaje
+        MAX_QUINIELAS_MOSTRAR = 50
+        total_quinielas = len(combinaciones)
+        combinaciones_a_mostrar = combinaciones[:MAX_QUINIELAS_MOSTRAR]
+        
+        if total_quinielas > MAX_QUINIELAS_MOSTRAR:
+            info_label = ttk.Label(self.frame_individuales, 
+                                   text=f"Mostrando {MAX_QUINIELAS_MOSTRAR} de {total_quinielas} quinielas reducidas",
+                                   font=('Arial', 10, 'bold'), foreground='blue')
+            info_label.pack(pady=5)
+        
+        # Mapeo de combinación numérica a signo
+        mapping = {1: '1', 2: 'X', 3: '2'}
+        
+        # Mostrar cada quiniela individual con procesamiento en lotes
+        for idx, comb in enumerate(combinaciones_a_mostrar, 1):
             # Frame para cada quiniela individual
             quiniela_frame = ttk.LabelFrame(self.frame_individuales, 
                                            text=f"Quiniela {idx}", 
@@ -1000,9 +1036,6 @@ class QuinielaApp:
             # Separador
             ttk.Separator(quiniela_frame, orient='horizontal').pack(fill='x', pady=2)
             
-            # Mapeo de combinación numérica a signo
-            mapping = {1: '1', 2: 'X', 3: '2'}
-            
             # Mostrar cada partido de esta quiniela
             for i, partido in enumerate(self.partidos_actuales[:14]):
                 if i >= len(comb):
@@ -1019,7 +1052,7 @@ class QuinielaApp:
                 partido_text = f"{partido.get('local', 'Local')} vs {partido.get('visitante', 'Visitante')}"
                 ttk.Label(row_frame, text=partido_text, font=('Arial', 8), width=28, anchor='w').grid(row=0, column=1, padx=1, sticky='w')
                 
-                # Cuadros 1X2 - marcar solo el signo elegido
+                # Cuadros 1X2 - marcar solo el signo elegido (usar ttk.Label si es posible para reducir recursos)
                 bg_1 = '#ff6b6b' if signo == '1' else '#f0f0f0'
                 fg_1 = 'white' if signo == '1' else 'black'
                 cuadro1 = TkLabel(row_frame, text="1", font=('Arial', 9, 'bold'), 
@@ -1040,10 +1073,17 @@ class QuinielaApp:
                                  width=4, anchor='center', relief='raised',
                                  background=bg_2, foreground=fg_2, bd=1)
                 cuadro2.grid(row=0, column=4, padx=1, ipady=2)
+            
+            # Actualizar canvas cada 10 quinielas para evitar saturación
+            if idx % 10 == 0:
+                self.frame_individuales.update_idletasks()
         
-        # Actualizar scrollregion
-        self.frame_individuales.update_idletasks()
-        self.canvas_individuales.configure(scrollregion=self.canvas_individuales.bbox('all'))
+        # Actualizar scrollregion al final
+        try:
+            self.frame_individuales.update_idletasks()
+            self.canvas_individuales.configure(scrollregion=self.canvas_individuales.bbox('all'))
+        except Exception:
+            pass
     
     def _actualizar_info_reduccion(self):
         """Actualizar información de quiniela previa en pestaña de reducción"""
