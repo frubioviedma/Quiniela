@@ -358,13 +358,146 @@ class Scraper:
         return resultados
 
     def _scrape_vivo_eduardo_losilla(self) -> List[Dict]:
-        """Scrapear quiniela en directo desde eduardolosilla.es"""
-        logger.info("Scrapeando resultados en vivo desde EduardoLosilla")
+        """Scrapear quiniela en directo desde eduardolosilla.es/quiniela/ayudas/directo-hoy"""
+        logger.info("Scrapeando resultados en vivo desde EduardoLosilla (directo-hoy)")
         html = self.get_cached_html(URL_QUINIELA_DIRECTO_ALTERNATIVO, use_cache=False)
         soup = BeautifulSoup(html, 'html.parser')
-        resultados = self._parse_resultados_en_vivo(soup)
+        
+        # Intentar parsing específico para la estructura de directo-hoy
+        resultados = self._parse_directo_hoy_eduardolosilla(soup)
+        if not resultados:
+            # Fallback al parsing genérico
+            resultados = self._parse_resultados_en_vivo(soup)
+        
         logger.info(f"Resultados en vivo (EduardoLosilla): {len(resultados)} partidos")
         return resultados
+    
+    def _parse_directo_hoy_eduardolosilla(self, soup: BeautifulSoup) -> List[Dict]:
+        """
+        Parsear específicamente la estructura de eduardolosilla.es/quiniela/ayudas/directo-hoy
+        
+        Estructura esperada:
+        - Partidos numerados del 1 al 14 en tabla
+        - Pleno al 15 (partido 15)
+        - Formato: número, equipos, marcador, día/hora, cuadros 1X2
+        """
+        resultados = []
+        partidos_map = {}
+        
+        # Buscar tabla principal que contenga los partidos
+        # La estructura puede tener múltiples tablas, buscar la que tenga partidos numerados
+        tablas = soup.find_all('table')
+        
+        for tabla in tablas:
+            filas = tabla.find_all('tr')
+            
+            for fila in filas:
+                # Obtener todas las celdas de la fila
+                celdas = fila.find_all(['td', 'th'])
+                if len(celdas) < 3:  # Mínimo necesitamos número, equipos, resultado
+                    continue
+                
+                # Extraer texto de todas las celdas
+                textos = [celda.get_text(' ', strip=True) for celda in celdas]
+                texto_completo = ' '.join(textos)
+                
+                # Buscar número de partido (puede estar en primera celda o al inicio del texto)
+                partido_num = None
+                
+                # Intentar obtener número de la primera celda
+                if textos and textos[0]:
+                    num_match = re.match(r'^(\d{1,2})\s*$', textos[0].strip())
+                    if num_match:
+                        partido_num = int(num_match.group(1))
+                
+                # Si no, buscar en el texto completo
+                if not partido_num:
+                    num_match = re.search(r'\b(\d{1,2})\s+(?:VILLARREAL|AT\.|R\.|LEVANTE|ALAVÉS|BARCELONA|BETIS|R\.OVIEDO|LEGANÉS|ALMERÍA|ANDORRA|SPORTING|CASTELLÓN|R\.ZARAGOZA|R\.SOCIEDAD)', texto_completo, re.IGNORECASE)
+                    if num_match:
+                        partido_num = int(num_match.group(1))
+                
+                if not partido_num or not (1 <= partido_num <= 15):
+                    continue
+                
+                if partido_num in partidos_map:
+                    continue  # Ya procesado
+                
+                # Extraer información del partido
+                partido_info = self._extraer_info_partido_eduardolosilla(fila, texto_completo, textos, partido_num)
+                if partido_info:
+                    partidos_map[partido_num] = partido_info
+        
+        # Ordenar por número de partido
+        resultados = [partidos_map[i] for i in sorted(partidos_map.keys()) if 1 <= i <= 15]
+        return resultados
+    
+    def _extraer_info_partido_eduardolosilla(self, fila, texto: str, textos_celdas: List[str], partido_num: int) -> Dict:
+        """Extraer información específica de un partido desde eduardolosilla.es"""
+        info = {
+            'partido_numero': partido_num,
+            'local': None,
+            'visitante': None,
+            'goles_local': None,
+            'goles_visitante': None,
+            'signo': None,
+            'estado': 'pendiente',
+            'minuto': None,
+            'texto_resultado': None,
+            'fuente': 'eduardolosilla'
+        }
+        
+        # Extraer nombres de equipos
+        # Patrón común: "VILLARREAL - RAYO" o similar
+        # También puede estar en celdas separadas
+        equipos_encontrados = False
+        
+        # Intentar extraer de celdas específicas (generalmente celda 1 o 2 contiene equipos)
+        if len(textos_celdas) >= 2:
+            # Buscar patrón LOCAL - VISITANTE en las celdas
+            for texto_celda in textos_celdas[1:4]:  # Revisar primeras celdas relevantes
+                equipos_match = re.search(r'([A-ZÁÉÍÓÚÑa-záéíóúñ0-9.\s]+?)\s*-\s*([A-ZÁÉÍÓÚÑa-záéíóúñ0-9.\s]+)', texto_celda)
+                if equipos_match:
+                    info['local'] = equipos_match.group(1).strip()
+                    info['visitante'] = equipos_match.group(2).strip()
+                    equipos_encontrados = True
+                    break
+        
+        # Si no se encontró en celdas, buscar en texto completo
+        if not equipos_encontrados:
+            equipos_match = re.search(r'(?:^\d+\s+)?([A-ZÁÉÍÓÚÑa-záéíóúñ0-9.\s]+?)\s*-\s*([A-ZÁÉÍÓÚÑa-záéíóúñ0-9.\s]+)', texto)
+            if equipos_match:
+                info['local'] = equipos_match.group(1).strip()
+                info['visitante'] = equipos_match.group(2).strip()
+                equipos_encontrados = True
+        
+        # Extraer marcador (formato: X-Y) - evitar coincidencias con día/hora
+        # Buscar patrones como "4-0", "3-1" pero no "SAB-21:00"
+        marcador_match = re.search(r'\b(\d{1,2})\s*-\s*(\d{1,2})\b(?!\s*(?:SAB|DOM|LUN|MAR|MIE|JUE|VIE))', texto)
+        if marcador_match:
+            info['goles_local'] = int(marcador_match.group(1))
+            info['goles_visitante'] = int(marcador_match.group(2))
+            info['signo'] = self._signo_from_score(info['goles_local'], info['goles_visitante'])
+            info['texto_resultado'] = f"{info['goles_local']}-{info['goles_visitante']}"
+            info['estado'] = 'final'
+        elif re.search(r'^-', texto):  # Si solo aparece "-" sin números, partido pendiente
+            info['texto_resultado'] = '-'
+            info['estado'] = 'pendiente'
+        
+        # Buscar indicadores de día/hora
+        if re.search(r'\b(SAB|DOM|LUN|MAR|MIE|JUE|VIE)\s+\d{1,2}:\d{2}', texto, re.IGNORECASE):
+            if not marcador_match:  # Si hay día/hora pero no marcador, está pendiente
+                info['estado'] = 'pendiente'
+        
+        # Extraer minuto si está en juego (puede aparecer como "23'" o similar)
+        minuto_match = re.search(r'(\d{1,2})\s*[\'\"]', texto)
+        if minuto_match and marcador_match:  # Solo si hay marcador
+            info['minuto'] = minuto_match.group(1) + "'"
+            info['estado'] = 'en_juego'
+        
+        # Solo retornar si tenemos al menos número de partido
+        if info.get('partido_numero'):
+            return info
+        return None
 
     def _parse_resultados_en_vivo(self, soup: BeautifulSoup) -> List[Dict]:
         """Parsear tablas/listas genéricas de resultados en vivo"""

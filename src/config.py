@@ -21,7 +21,7 @@ CACHE_EXPIRY_DAYS = 7
 URL_BDFUTBOL_BASE = "https://www.bdfutbol.com/es/t"
 URL_QUINIELAS_OFICIAL = "https://www.loteriasyapuestas.es/es/quiniela"
 URL_QUINIELA_RESULTADOS_VIVO = "https://www.loteriasyapuestas.es/es/resultados/quiniela"
-URL_QUINIELA_DIRECTO_ALTERNATIVO = "https://www.eduardolosilla.es/quiniela/quiniela.php"
+URL_QUINIELA_DIRECTO_ALTERNATIVO = "https://www.eduardolosilla.es/quiniela/ayudas/directo-hoy"
 
 # Configuración de pronósticos
 PESO_HISTORICO = 0.4  # Peso de datos históricos
