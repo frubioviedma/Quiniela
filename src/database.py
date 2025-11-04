@@ -178,10 +178,27 @@ class DatabaseManager:
     # === MÉTODOS PARA DATOS HISTÓRICOS ===
     
     def save_historical_data(self, datos: List[Dict], division: int):
-        """Guardar datos históricos de partidos"""
+        """Guardar datos históricos de partidos
+        
+        IMPORTANTE: Este método usa UPSERT (INSERT ... ON CONFLICT DO UPDATE).
+        NO borra datos existentes, solo actualiza o inserta nuevos registros.
+        Los datos históricos están SEGUROS y nunca se pierden.
+        """
+        # SEGURIDAD: Validar que solo se usan tablas históricas permitidas
+        if division not in [1, 2]:
+            logger.error(f"❌ División inválida: {division}. Solo se permiten 1 o 2.")
+            return
+        
         table_name = 'primera_division' if division == 1 else 'segunda_division'
         
+        # SEGURIDAD: Validar que no se intenta borrar nada
+        if table_name not in ['primera_division', 'segunda_division']:
+            logger.error(f"❌ SEGURIDAD: Intento de acceder a tabla no permitida: {table_name}")
+            return
+        
         with self.get_connection() as conn:
+            # IMPORTANTE: Usamos UPSERT (ON CONFLICT DO UPDATE), NO borramos datos
+            # Esto significa que si un partido ya existe, solo se actualiza, nunca se borra
             conn.executemany(f'''
                 INSERT INTO {table_name} (temporada, jornada, fecha, local, visitante, 
                                          goles_local, goles_visitante, quiniela)
@@ -194,7 +211,7 @@ class DatabaseManager:
                     quiniela = excluded.quiniela
             ''', datos)
             conn.commit()
-            logger.info(f"Guardados {len(datos)} partidos históricos en {table_name}")
+            logger.info(f"✅ Guardados/actualizados {len(datos)} partidos históricos en {table_name} (sin borrar datos existentes)")
     
     def get_historical_matches(self, local: str, visitante: str, division: int = 1):
         """Obtener enfrentamientos históricos entre dos equipos"""
@@ -253,11 +270,43 @@ class DatabaseManager:
     # === MÉTODOS PARA JORNADA ACTUAL ===
     
     def save_current_round_matches(self, matches: List[Dict], temporada: str, jornada: int):
-        """Guardar partidos de la jornada actual"""
+        """Guardar partidos de la jornada actual
+        
+        IMPORTANTE: Solo modifica la tabla 'jornada_actual' (temporal).
+        NO toca las tablas históricas (primera_division, segunda_division).
+        
+        SEGURIDAD: Solo se guardan exactamente 15 partidos (1-15), sin duplicados.
+        """
+        # VALIDACIÓN: Debe haber exactamente 15 partidos
+        if len(matches) != 15:
+            logger.warning(f"⚠️ Se intentan guardar {len(matches)} partidos, deben ser EXACTAMENTE 15")
+            logger.warning(f"⚠️ Filtrando y limitando a 15 partidos únicos...")
+            
+            # Remover duplicados y mantener solo partidos 1-15
+            partidos_unicos = []
+            numeros_vistos = set()
+            for match in matches:
+                num = match.get('partido_numero', 0)
+                if num not in numeros_vistos and 1 <= num <= 15:
+                    partidos_unicos.append(match)
+                    numeros_vistos.add(num)
+                else:
+                    logger.warning(f"⚠️ Partido duplicado o inválido filtrado: partido_numero={num}")
+            
+            # Ordenar por número de partido y tomar solo los primeros 15
+            partidos_unicos.sort(key=lambda x: x.get('partido_numero', 0))
+            matches = partidos_unicos[:15]
+            
+            if len(matches) != 15:
+                logger.error(f"❌ Después del filtrado, solo hay {len(matches)} partidos válidos. Deben ser 15.")
+                return
+        
         with self.get_connection() as conn:
-            # Primero limpiar jornada anterior si existe
+            # Primero limpiar jornada anterior si existe (SOLO jornada_actual, NO histórico)
+            # SEGURIDAD: Solo borramos de jornada_actual, nunca de tablas históricas
             conn.execute('DELETE FROM jornada_actual WHERE temporada = ? AND jornada = ?', 
                         (temporada, jornada))
+            logger.info(f"⚠️ Limpiando SOLO jornada_actual para {temporada} jornada {jornada} (NO histórico)")
             
             for match in matches:
                 conn.execute('''
@@ -281,8 +330,132 @@ class DatabaseManager:
                 ORDER BY partido_numero
             ''', (temporada, jornada))
             
+            rows = cur.fetchall()
+            
+            # LOGGING CRÍTICO: Ver qué devuelve la BD
+            logger.info(f"📊 BD devuelve {len(rows)} filas para {temporada} jornada {jornada}")
+            for r in rows[:5]:  # Mostrar primeros 5
+                logger.info(f"   Partido {r[1]}: local='{r[3]}', visitante='{r[4]}'")
+            
             columns = [col[0] for col in cur.description]
-            return [dict(zip(columns, row)) for row in cur.fetchall()]
+            matches = [dict(zip(columns, row)) for row in rows]
+            
+            # VALIDACIÓN: Verificar que los datos son correctos
+            matches_validos = []
+            for match in matches:
+                local = str(match.get('local', '')).strip()
+                visitante = str(match.get('visitante', '')).strip()
+                num = match.get('partido_numero', 0)
+                
+                # Validar que son nombres de equipos, no texto de quiniela
+                if (local and visitante and 
+                    len(local) >= 3 and len(visitante) >= 3 and
+                    not any(keyword in local.lower() for keyword in ['triple', 'doble', 'apuesta', 'jugar']) and
+                    not any(keyword in visitante.lower() for keyword in ['triple', 'doble', 'apuesta', 'jugar'])):
+                    matches_validos.append(match)
+                else:
+                    logger.error(f"❌ Partido {num} tiene datos INVÁLIDOS: local='{local}', visitante='{visitante}'")
+                    logger.error(f"❌ NO se incluirá en la lista (parece ser texto de quiniela, no equipos)")
+            
+            logger.info(f"✅ Devueltos {len(matches_validos)} partidos válidos de {len(matches)} totales")
+            return matches_validos
+    
+    def get_all_seasons(self) -> List[str]:
+        """Obtener todas las temporadas disponibles (desde histórico y jornada_actual)"""
+        with self.get_connection() as conn:
+            cur = conn.cursor()
+            # Buscar en jornada_actual (quinielas) y en histórico (ligas)
+            cur.execute('''
+                SELECT DISTINCT temporada FROM jornada_actual
+                UNION
+                SELECT DISTINCT temporada FROM primera_division
+                UNION
+                SELECT DISTINCT temporada FROM segunda_division
+                ORDER BY temporada DESC
+            ''')
+            return [row[0] for row in cur.fetchall()]
+    
+    def get_jornadas_for_season(self, temporada: str) -> List[int]:
+        """Obtener todas las jornadas de una temporada (desde jornada_actual, no liga)"""
+        with self.get_connection() as conn:
+            cur = conn.cursor()
+            # Obtener jornadas de quiniela desde jornada_actual (no de liga)
+            cur.execute('''
+                SELECT DISTINCT jornada FROM jornada_actual
+                WHERE temporada = ?
+                ORDER BY jornada
+            ''', (temporada,))
+            jornadas_quiniela = [row[0] for row in cur.fetchall()]
+            
+            # Si no hay en jornada_actual, buscar en histórico (fallback)
+            if not jornadas_quiniela:
+                cur.execute('''
+                    SELECT DISTINCT jornada FROM primera_division
+                    WHERE temporada = ?
+                    UNION
+                    SELECT DISTINCT jornada FROM segunda_division
+                    WHERE temporada = ?
+                    ORDER BY jornada
+                ''', (temporada, temporada))
+                jornadas_quiniela = [row[0] for row in cur.fetchall()]
+            
+            return jornadas_quiniela
+    
+    def get_all_quiniela_jornadas(self, temporada: str = None) -> List[Dict]:
+        """Obtener todas las jornadas de quiniela disponibles (con temporada opcional)"""
+        with self.get_connection() as conn:
+            cur = conn.cursor()
+            if temporada:
+                cur.execute('''
+                    SELECT DISTINCT temporada, jornada, MIN(fecha) as fecha_inicio
+                    FROM jornada_actual
+                    WHERE temporada = ?
+                    GROUP BY temporada, jornada
+                    ORDER BY temporada DESC, jornada DESC
+                ''', (temporada,))
+            else:
+                cur.execute('''
+                    SELECT DISTINCT temporada, jornada, MIN(fecha) as fecha_inicio
+                    FROM jornada_actual
+                    GROUP BY temporada, jornada
+                    ORDER BY temporada DESC, jornada DESC
+                ''')
+            
+            return [{'temporada': row[0], 'jornada': row[1], 'fecha': row[2]} 
+                    for row in cur.fetchall()]
+    
+    def get_historical_results(self, temporada: str, jornada: int) -> List[Dict]:
+        """Obtener resultados históricos de una jornada específica"""
+        with self.get_connection() as conn:
+            cur = conn.cursor()
+            # Combinar resultados de ambas divisiones
+            cur.execute('''
+                SELECT local, visitante, goles_local, goles_visitante, quiniela
+                FROM primera_division
+                WHERE temporada = ? AND jornada = ?
+                UNION ALL
+                SELECT local, visitante, goles_local, goles_visitante, quiniela
+                FROM segunda_division
+                WHERE temporada = ? AND jornada = ?
+                ORDER BY local
+            ''', (temporada, jornada, temporada, jornada))
+            
+            resultados = []
+            partido_num = 1
+            for row in cur.fetchall():
+                resultados.append({
+                    'partido_numero': partido_num,
+                    'local': row[0],
+                    'visitante': row[1],
+                    'goles_local': row[2],
+                    'goles_visitante': row[3],
+                    'signo': row[4],
+                    'estado': 'final',
+                    'texto_resultado': f"{row[2]}-{row[3]}",
+                    'fuente': 'historico'
+                })
+                partido_num += 1
+            return resultados
     
     # === MÉTODOS PARA CUOTAS ===
     
@@ -458,7 +631,12 @@ class DatabaseManager:
             logger.info(f"Guardados {len(resultados)} resultados en vivo ({fuente})")
 
     def get_live_results(self, temporada: str, jornada: int, fuente: str = None) -> List[Dict]:
-        """Obtener resultados en vivo almacenados"""
+        """
+        Obtener resultados en vivo almacenados
+        
+        Busca primero en resultados_en_vivo, si no encuentra nada, busca en tablas históricas
+        como fallback (primera_division, segunda_division)
+        """
         with self.get_connection() as conn:
             cur = conn.cursor()
             query = '''
@@ -475,7 +653,46 @@ class DatabaseManager:
 
             cur.execute(query, params)
             columns = [col[0] for col in cur.description]
-            return [dict(zip(columns, row)) for row in cur.fetchall()]
+            resultados = [dict(zip(columns, row)) for row in cur.fetchall()]
+            
+            # Si no hay resultados en resultados_en_vivo, buscar en histórico como fallback
+            if not resultados:
+                logger.info(f"No hay resultados en resultados_en_vivo para {temporada} jornada {jornada}, buscando en histórico...")
+                resultados_historico = self.get_historical_results(temporada, jornada)
+                
+                if resultados_historico:
+                    # Convertir formato histórico a formato de resultados_en_vivo
+                    resultados = []
+                    for res in resultados_historico:
+                        goles_local = res.get('goles_local')
+                        goles_visitante = res.get('goles_visitante')
+                        signo = res.get('quiniela')
+                        
+                        # Crear texto_resultado
+                        if goles_local is not None and goles_visitante is not None:
+                            texto_resultado = f"{goles_local}-{goles_visitante}"
+                            estado = 'final'
+                        else:
+                            texto_resultado = '-'
+                            estado = 'pendiente'
+                        
+                        resultados.append({
+                            'partido_numero': res.get('partido_numero'),
+                            'local': res.get('local'),
+                            'visitante': res.get('visitante'),
+                            'goles_local': goles_local,
+                            'goles_visitante': goles_visitante,
+                            'minuto': None,
+                            'estado': estado,
+                            'signo': signo,
+                            'texto_resultado': texto_resultado,
+                            'fuente': 'historico',
+                            'actualizado': None
+                        })
+                    
+                    logger.info(f"Encontrados {len(resultados)} resultados en histórico para {temporada} jornada {jornada}")
+            
+            return resultados
 
     # === MÉTODOS PARA COMPARACIONES ===
 
@@ -501,16 +718,35 @@ class DatabaseManager:
             ''', (temporada, jornada, nombre, tipo, combinaciones_json, dobles_json, triples_json))
             conn.commit()
 
-    def get_comparaciones(self, temporada: str, jornada: int) -> List[Dict]:
-        """Obtener quinielas almacenadas para comparación"""
+    def get_comparaciones(self, temporada: str = None, jornada: int = None) -> List[Dict]:
+        """
+        Obtener quinielas almacenadas para comparación
+        
+        Args:
+            temporada: Temporada específica (opcional, si None devuelve todas)
+            jornada: Jornada específica (opcional, si None devuelve todas)
+        
+        Returns:
+            Lista de registros con información de comparaciones
+        """
         with self.get_connection() as conn:
             cur = conn.cursor()
-            cur.execute('''
-                SELECT nombre, tipo, combinaciones, dobles, triples, fecha_creacion
+            query = '''
+                SELECT nombre, tipo, combinaciones, dobles, triples, fecha_creacion, temporada, jornada
                 FROM comparaciones_jornadas
-                WHERE temporada = ? AND jornada = ?
-                ORDER BY fecha_creacion DESC
-            ''', (temporada, jornada))
+                WHERE 1=1
+            '''
+            params = []
+            
+            if temporada:
+                query += ' AND temporada = ?'
+                params.append(temporada)
+            if jornada:
+                query += ' AND jornada = ?'
+                params.append(jornada)
+            
+            query += ' ORDER BY temporada DESC, jornada DESC, fecha_creacion DESC'
+            cur.execute(query, params)
 
             registros = []
             for row in cur.fetchall():
@@ -523,7 +759,9 @@ class DatabaseManager:
                     'combinaciones': combinaciones,
                     'dobles': dobles,
                     'triples': triples,
-                    'fecha_creacion': row[5]
+                    'fecha_creacion': row[5],
+                    'temporada': row[6] if len(row) > 6 else temporada,
+                    'jornada': row[7] if len(row) > 7 else jornada
                 })
             return registros
 

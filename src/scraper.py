@@ -270,10 +270,10 @@ class Scraper:
     
     def scrape_current_round_bdfutbol(self, temporada: str, jornada: int, division: int = 1) -> List[Dict]:
         """
-        Scrapear jornada actual desde BDFutbol (incluye partidos pendientes)
+        Scrapear jornada desde BDFutbol - MÉTODO SIMPLE Y FUNCIONAL (adaptado de interfaz_v3.py)
         
         Args:
-            temporada: Temporada actual
+            temporada: Temporada (ej: "2024-25")
             jornada: Número de jornada
             division: División (1 o 2)
         
@@ -281,10 +281,10 @@ class Scraper:
             Lista de partidos de la jornada
         """
         try:
-            logger.info(f"Scrapeando jornada {jornada} de {temporada}")
-            url = f"{URL_BDFUTBOL_BASE}/t{temporada}{'2a' if division == 2 else ''}.html?tab=results"
+            logger.info(f"Scrapeando jornada {jornada} de {temporada} división {division}")
+            url = f"https://www.bdfutbol.com/es/t/t{temporada}{'2a' if division == 2 else ''}.html?tab=results"
             
-            html_content = self.get_cached_html(url)
+            html_content = self.get_cached_html(url, use_cache=False)  # Sin caché para jornada actual
             soup = BeautifulSoup(html_content, 'html.parser')
             tabla = soup.find('table', class_='taula_estil taula_estil-16')
             
@@ -295,26 +295,71 @@ class Scraper:
             partidos_jornada = []
             current_jornada = 0
             
+            # MÉTODO SIMPLE: recorrer filas y buscar la jornada
             for row in tabla.find_all('tr'):
+                # Detectar encabezado de jornada
                 if 'jornadatit' in row.get('class', []):
                     try:
                         current_jornada = int(row.td.text.split()[-1])
-                        if current_jornada == jornada:
-                            logger.info(f"Encontrada jornada {jornada}")
                     except (ValueError, AttributeError):
                         pass
+                # Procesar partido si estamos en la jornada correcta
                 elif 'jornadai' in row.get('class', []):
-                    # Solo procesar si estamos en la jornada correcta
                     if current_jornada == jornada:
-                        partido = self._process_row_current(row, jornada)
-                        if partido:
-                            partido['temporada'] = temporada
-                            partido['division'] = division
-                            # Añadir número de partido
-                            partido['partido_numero'] = len(partidos_jornada) + 1
+                        try:
+                            cols = row.find_all('td')
+                            if len(cols) < 6:
+                                continue
+                            
+                            fecha = cols[0].text.strip()
+                            local = cols[1].text.strip()
+                            visitante = cols[3].text.strip()
+                            resultado_texto = cols[2].text.strip()
+                            
+                            # Incluir partidos pendientes también
+                            if resultado_texto == "—":
+                                goles_local = None
+                                goles_visitante = None
+                                quiniela = None
+                            elif len(resultado_texto) >= 2:
+                                # Intentar extraer resultado
+                                if resultado_texto[0].isdigit() and resultado_texto[-1].isdigit():
+                                    goles_local = int(resultado_texto[0])
+                                    goles_visitante = int(resultado_texto[-1])
+                                    if goles_local > goles_visitante:
+                                        quiniela = '1'
+                                    elif goles_local == goles_visitante:
+                                        quiniela = 'X'
+                                    else:
+                                        quiniela = '2'
+                                else:
+                                    goles_local = None
+                                    goles_visitante = None
+                                    quiniela = None
+                            else:
+                                goles_local = None
+                                goles_visitante = None
+                                quiniela = None
+                            
+                            partido = {
+                                'jornada': jornada,
+                                'fecha': fecha,
+                                'local': local,
+                                'visitante': visitante,
+                                'goles_local': goles_local,
+                                'goles_visitante': goles_visitante,
+                                'quiniela': quiniela,
+                                'temporada': temporada,
+                                'division': division,
+                                'partido_numero': len(partidos_jornada) + 1
+                            }
                             partidos_jornada.append(partido)
+                            
+                        except Exception as e:
+                            logger.error(f"Error procesando fila: {e}")
+                            continue
             
-            logger.info(f"Extraídos {len(partidos_jornada)} partidos de jornada {jornada}")
+            logger.info(f"✅ Extraídos {len(partidos_jornada)} partidos de jornada {jornada}")
             return partidos_jornada
             
         except Exception as e:
@@ -358,18 +403,159 @@ class Scraper:
         return resultados
 
     def _scrape_vivo_eduardo_losilla(self) -> List[Dict]:
-        """Scrapear quiniela en directo desde eduardolosilla.es/quiniela/ayudas/directo-hoy"""
-        logger.info("Scrapeando resultados en vivo desde EduardoLosilla (directo-hoy)")
+        """Scrapear quiniela en directo desde la página principal de eduardolosilla.es (sección QUINIELA EN VIVO)"""
+        logger.info("Scrapeando resultados en vivo desde EduardoLosilla (página principal)")
         html = self.get_cached_html(URL_QUINIELA_DIRECTO_ALTERNATIVO, use_cache=False)
         soup = BeautifulSoup(html, 'html.parser')
         
-        # Intentar parsing específico para la estructura de directo-hoy
-        resultados = self._parse_directo_hoy_eduardolosilla(soup)
-        if not resultados:
-            # Fallback al parsing genérico
+        # Intentar parsing de la sección QUINIELA EN VIVO de la homepage
+        resultados = self._parse_quiniela_vivo_homepage(soup)
+        
+        if not resultados or len(resultados) < 14:
+            # Fallback al parser de directo-hoy (por si acaso)
+            logger.warning("Parsing de homepage sin resultados suficientes, intentando parser directo-hoy")
+            resultados = self._parse_directo_hoy_eduardolosilla(soup)
+        
+        if not resultados or len(resultados) < 14:
+            # Último fallback al parser genérico
+            logger.warning("Parsing específico sin resultados, intentando parser genérico")
             resultados = self._parse_resultados_en_vivo(soup)
         
         logger.info(f"Resultados en vivo (EduardoLosilla): {len(resultados)} partidos")
+        return resultados
+    
+    def _parse_quiniela_vivo_homepage(self, soup: BeautifulSoup) -> List[Dict]:
+        """
+        Parsear la sección "QUINIELA EN VIVO" de la página principal de eduardolosilla.es
+        
+        Esta sección aparece en el sidebar derecho de la homepage con formato compacto vertical.
+        """
+        resultados = []
+        
+        try:
+            # Buscar la sección "QUINIELA EN VIVO" - puede estar en varios formatos
+            # Buscar por texto o clase
+            secciones = soup.find_all(['div', 'section', 'aside'], 
+                                     string=re.compile(r'QUINIELA.*VIVO|VIVO.*QUINIELA', re.I))
+            
+            if not secciones:
+                # Buscar por ID o clase común
+                seccion_vivo = soup.find('div', {'id': re.compile(r'vivo|directo', re.I)}) or \
+                              soup.find('aside', {'class': re.compile(r'vivo|directo|sidebar', re.I)}) or \
+                              soup.find('div', {'class': re.compile(r'vivo|directo|en.vivo', re.I)})
+                
+                if seccion_vivo:
+                    secciones = [seccion_vivo]
+            
+            if not secciones:
+                # Buscar contenedor padre que tenga "JORNADA" y números de partido
+                for elem in soup.find_all(['div', 'section', 'aside']):
+                    texto = elem.get_text() if elem else ''
+                    if re.search(r'JORNADA\s+\d+|PARTIDO\s+\d+', texto, re.I):
+                        secciones = [elem]
+                        break
+            
+            if not secciones:
+                logger.warning("No se encontró la sección QUINIELA EN VIVO en la homepage")
+                return resultados
+            
+            seccion = secciones[0]
+            
+            # Buscar todos los partidos dentro de la sección
+            # Los partidos suelen estar en formato: número, equipos, resultado/marcador, cuadros 1X2
+            partidos_items = seccion.find_all(['div', 'tr', 'li', 'span'], 
+                                              recursive=True)
+            
+            partido_num = 1
+            for item in partidos_items:
+                texto_item = item.get_text(strip=True) if item else ''
+                
+                # Buscar número de partido (1-15)
+                match_num = re.search(r'^(\d{1,2})[.\s]', texto_item) or \
+                           re.search(r'partido\s*:?\s*(\d{1,2})', texto_item, re.I)
+                
+                if match_num:
+                    partido_num = int(match_num.group(1))
+                
+                # Buscar equipos (formato: LOCAL - VISITANTE)
+                equipos_match = re.search(r'([A-ZÁÉÍÓÚÑa-záéíóúñ0-9.\s]+?)\s*[-–]\s*([A-ZÁÉÍÓÚÑa-záéíóúñ0-9.\s]+)', texto_item)
+                
+                if equipos_match and partido_num <= 15:
+                    local = equipos_match.group(1).strip()
+                    visitante = equipos_match.group(2).strip()
+                    
+                    # Buscar marcador (formato: X-Y o pendiente)
+                    marcador_match = re.search(r'\b(\d{1,2})\s*[-–]\s*(\d{1,2})\b', texto_item)
+                    
+                    info = {
+                        'partido_numero': partido_num,
+                        'local': local,
+                        'visitante': visitante,
+                        'goles_local': None,
+                        'goles_visitante': None,
+                        'signo': None,
+                        'signo_pleno_15': None,
+                        'estado': 'pendiente',
+                        'texto_resultado': '-',
+                        'fuente': 'eduardolosilla',
+                        'es_pleno_15': partido_num == 15
+                    }
+                    
+                    if marcador_match:
+                        info['goles_local'] = int(marcador_match.group(1))
+                        info['goles_visitante'] = int(marcador_match.group(2))
+                        info['texto_resultado'] = f"{info['goles_local']}-{info['goles_visitante']}"
+                        info['estado'] = 'final'
+                        
+                        # Calcular signo
+                        if partido_num == 15:
+                            # Pleno al 15: signos especiales 0, 1, 2, 3, M
+                            info['signo_pleno_15'] = self._calcular_signo_pleno_15(
+                                info['goles_local'], info['goles_visitante']
+                            )
+                            info['signo'] = info['signo_pleno_15']
+                        else:
+                            # Signo normal 1, X, 2
+                            info['signo'] = self._signo_from_score(
+                                info['goles_local'], info['goles_visitante']
+                            )
+                    else:
+                        # Buscar si hay horario (partido pendiente)
+                        horario_match = re.search(r'(\d{1,2}):(\d{2})', texto_item)
+                        if horario_match:
+                            info['estado'] = 'pendiente'
+                            info['texto_resultado'] = f"{horario_match.group(1)}:{horario_match.group(2)}"
+                        
+                        # Intentar extraer signo marcado de los cuadros 1X2
+                        # Buscar cuadros resaltados o marcados
+                        cuadros = item.find_all(['span', 'div', 'td', 'a'], 
+                                              class_=re.compile(r'selected|active|marked|resalt', re.I))
+                        for cuadro in cuadros:
+                            texto_cuadro = cuadro.get_text(strip=True)
+                            if texto_cuadro in ['1', 'X', '2', '0', 'M']:
+                                if partido_num == 15:
+                                    info['signo_pleno_15'] = texto_cuadro
+                                    info['signo'] = texto_cuadro
+                                else:
+                                    info['signo'] = texto_cuadro
+                    
+                    # Solo añadir si tenemos información mínima (equipos)
+                    if local and visitante:
+                        resultados.append(info)
+                        partido_num += 1
+                        if partido_num > 15:
+                            break
+            
+            # Si no encontramos suficientes partidos, intentar método alternativo
+            if len(resultados) < 14:
+                logger.warning(f"Solo se encontraron {len(resultados)} partidos, intentando método alternativo")
+                resultados = self._parse_directo_hoy_eduardolosilla(soup)
+            
+        except Exception as e:
+            logger.error(f"Error parseando QUINIELA EN VIVO de homepage: {e}")
+            # Fallback al parser anterior
+            resultados = self._parse_directo_hoy_eduardolosilla(soup)
+        
         return resultados
     
     def _parse_directo_hoy_eduardolosilla(self, soup: BeautifulSoup) -> List[Dict]:
@@ -432,7 +618,10 @@ class Scraper:
         return resultados
     
     def _extraer_info_partido_eduardolosilla(self, fila, texto: str, textos_celdas: List[str], partido_num: int) -> Dict:
-        """Extraer información específica de un partido desde eduardolosilla.es"""
+        """Extraer información específica de un partido desde eduardolosilla.es
+        
+        Nota: El partido 15 (Pleno al 15) tiene signos especiales: 0, 1, 2, 3, M
+        """
         info = {
             'partido_numero': partido_num,
             'local': None,
@@ -443,8 +632,13 @@ class Scraper:
             'estado': 'pendiente',
             'minuto': None,
             'texto_resultado': None,
-            'fuente': 'eduardolosilla'
+            'fuente': 'eduardolosilla',
+            'es_pleno_15': partido_num == 15
         }
+        
+        # Si es Pleno al 15, usar lógica especial
+        if partido_num == 15:
+            return self._extraer_pleno_15(fila, texto, textos_celdas)
         
         # Extraer nombres de equipos
         # Patrón común: "VILLARREAL - RAYO" o similar
@@ -498,6 +692,109 @@ class Scraper:
         if info.get('partido_numero'):
             return info
         return None
+    
+    def _extraer_pleno_15(self, fila, texto: str, textos_celdas: List[str]) -> Dict:
+        """
+        Extraer información del Pleno al 15 (partido 15)
+        
+        El Pleno al 15 usa signos especiales: 0, 1, 2, 3, M
+        - 0: 0 goles
+        - 1: 1 gol
+        - 2: 2 goles
+        - 3: 3 o más goles
+        - M: Múltiple (resultado especial)
+        
+        Args:
+            fila: Elemento HTML de la fila
+            texto: Texto completo de la fila
+            textos_celdas: Lista de textos de celdas
+        
+        Returns:
+            Dict con información del Pleno al 15
+        """
+        info = {
+            'partido_numero': 15,
+            'local': None,
+            'visitante': None,
+            'goles_local': None,
+            'goles_visitante': None,
+            'signo': None,
+            'signo_pleno_15': None,  # Signo especial: 0, 1, 2, 3, M
+            'estado': 'pendiente',
+            'texto_resultado': None,
+            'fuente': 'eduardolosilla',
+            'es_pleno_15': True
+        }
+        
+        # Extraer nombres de equipos (mismo proceso que otros partidos)
+        equipos_encontrados = False
+        if len(textos_celdas) >= 2:
+            for texto_celda in textos_celdas[1:4]:
+                equipos_match = re.search(r'([A-ZÁÉÍÓÚÑa-záéíóúñ0-9.\s]+?)\s*-\s*([A-ZÁÉÍÓÚÑa-záéíóúñ0-9.\s]+)', texto_celda)
+                if equipos_match:
+                    info['local'] = equipos_match.group(1).strip()
+                    info['visitante'] = equipos_match.group(2).strip()
+                    equipos_encontrados = True
+                    break
+        
+        if not equipos_encontrados:
+            equipos_match = re.search(r'(?:^\d+\s+)?([A-ZÁÉÍÓÚÑa-záéíóúñ0-9.\s]+?)\s*-\s*([A-ZÁÉÍÓÚÑa-záéíóúñ0-9.\s]+)', texto)
+            if equipos_match:
+                info['local'] = equipos_match.group(1).strip()
+                info['visitante'] = equipos_match.group(2).strip()
+                equipos_encontrados = True
+        
+        # Extraer marcador y signo del Pleno al 15
+        marcador_match = re.search(r'\b(\d{1,2})\s*-\s*(\d{1,2})\b(?!\s*(?:SAB|DOM|LUN|MAR|MIE|JUE|VIE))', texto)
+        if marcador_match:
+            info['goles_local'] = int(marcador_match.group(1))
+            info['goles_visitante'] = int(marcador_match.group(2))
+            info['texto_resultado'] = f"{info['goles_local']}-{info['goles_visitante']}"
+            info['estado'] = 'final'
+            
+            # Calcular signo del Pleno al 15 (0, 1, 2, 3, M)
+            info['signo_pleno_15'] = self._calcular_signo_pleno_15(
+                info['goles_local'], info['goles_visitante']
+            )
+            # También mantener signo tradicional para compatibilidad
+            info['signo'] = self._signo_from_score(info['goles_local'], info['goles_visitante'])
+        else:
+            info['texto_resultado'] = '-'
+            info['estado'] = 'pendiente'
+        
+        return info
+    
+    def _calcular_signo_pleno_15(self, goles_local: int, goles_visitante: int) -> str:
+        """
+        Calcular signo del Pleno al 15 según reglas especiales
+        
+        Signos del Pleno al 15:
+        - 0: 0 goles totales
+        - 1: 1 gol total
+        - 2: 2 goles totales
+        - 3: 3 o más goles totales
+        - M: Múltiple (resultado especial - raro, generalmente 3+)
+        
+        Args:
+            goles_local: Goles del equipo local
+            goles_visitante: Goles del equipo visitante
+        
+        Returns:
+            Signo del Pleno al 15 ('0', '1', '2', '3', 'M')
+        """
+        total_goles = goles_local + goles_visitante
+        
+        if total_goles == 0:
+            return '0'
+        elif total_goles == 1:
+            return '1'
+        elif total_goles == 2:
+            return '2'
+        elif total_goles >= 3:
+            return '3'  # 3 o más goles
+        else:
+            # Caso especial (no debería pasar, pero por si acaso)
+            return 'M'
 
     def _parse_resultados_en_vivo(self, soup: BeautifulSoup) -> List[Dict]:
         """Parsear tablas/listas genéricas de resultados en vivo"""
@@ -540,10 +837,17 @@ class Scraper:
             if not texto_row:
                 continue
 
+            # Buscar número de partido - puede ser "1", "2", ..., "14", "P-15" o "15"
             num_match = re.match(r'^(\d{1,2})', texto_row)
-            if not num_match:
+            p15_match = re.search(r'\bP-15\b', texto_row, re.IGNORECASE)
+            
+            if p15_match:
+                partido_numero = 15
+            elif num_match:
+                partido_numero = int(num_match.group(1))
+            else:
                 continue
-            partido_numero = int(num_match.group(1))
+                
             if partido_numero < 1 or partido_numero > 15:
                 continue
 
@@ -574,7 +878,7 @@ class Scraper:
             elif null_match:
                 resultado_texto = 'Pendiente'
 
-            resultados.append({
+            info_partido = {
                 'partido_numero': partido_numero,
                 'local': local,
                 'visitante': visitante,
@@ -583,8 +887,20 @@ class Scraper:
                 'minuto': minuto,
                 'estado': estado,
                 'signo': signo,
-                'texto_resultado': resultado_texto
-            })
+                'texto_resultado': resultado_texto,
+                'fuente': 'loterias',
+                'es_pleno_15': partido_numero == 15
+            }
+            
+            # Si es el partido 15 (Pleno al 15), calcular signo especial
+            if partido_numero == 15 and goles_local is not None and goles_visitante is not None:
+                info_partido['signo_pleno_15'] = self._calcular_signo_pleno_15(goles_local, goles_visitante)
+                # También puede venir como "M-2" en el texto
+                signo_pleno_match = re.search(r'\b([0-3M])\s*-\s*([0-3M])\b', texto_row, re.IGNORECASE)
+                if signo_pleno_match:
+                    info_partido['signo_pleno_15'] = signo_pleno_match.group(1).upper()
+            
+            resultados.append(info_partido)
 
         return resultados
 
