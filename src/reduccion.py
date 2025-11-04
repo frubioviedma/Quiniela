@@ -387,6 +387,20 @@ class ReductorQuinielas:
             Lista de combinaciones filtradas
         """
         filtradas = []
+        total_combinaciones = len(combinaciones)
+        
+        # Si no hay filtros activos, devolver todas las combinaciones
+        filtros_activos = any([
+            filtros.get('validar_totales', False),
+            filtros.get('validar_consecutivos', False),
+            filtros.get('validar_interrupciones', False),
+            filtros.get('validar_pares_signos', False),
+            filtros.get('validar_trios_signos', False)
+        ])
+        
+        if not filtros_activos:
+            logger.info(f"No hay filtros activos, devolviendo todas las {total_combinaciones} combinaciones")
+            return combinaciones
         
         for comb in combinaciones:
             # Convertir a string para análisis
@@ -395,6 +409,9 @@ class ReductorQuinielas:
             # Verificar si pasa todos los filtros
             if self._validar_combinacion(comb_str, filtros):
                 filtradas.append(comb)
+        
+        logger.info(f"Filtros aplicados: {total_combinaciones} → {len(filtradas)} combinaciones "
+                   f"({len(filtradas)/total_combinaciones*100:.1f}% pasaron los filtros)")
         
         return filtradas
     
@@ -409,9 +426,9 @@ class ReductorQuinielas:
         Returns:
             True si pasa validación
         """
-        # Verificar signos consecutivos - ACTIVO POR DEFECTO (condición crítica)
+        # Verificar signos consecutivos - SOLO SI ESTÁ ACTIVADO
         # Según estadísticas históricas: máximo 6 unos seguidos, 3 Xs, 3 doses
-        if filtros.get('validar_consecutivos', True):
+        if filtros.get('validar_consecutivos', False):
             simbolos = contar_simbolos_consecutivos(comb)
             
             max_1s = filtros.get('max_seguidos_1', 6)  # Máximo 6 por defecto (no 20!)
@@ -431,13 +448,12 @@ class ReductorQuinielas:
                     logger.debug(f"Combinación {comb} rechazada: {length} doses seguidas (máximo {max_2s})")
                     return False
         
-        # Descartar extremos (SOLO SI ESTÁ ACTIVO)
-        if filtros.get('descartar_extremos', True):
-            if comb.count('1') == len(comb) or comb.count('X') == len(comb) or comb.count('2') == len(comb):
-                return False
+        # Descartar extremos (SIEMPRE ACTIVO - combinaciones imposibles)
+        if comb.count('1') == len(comb) or comb.count('X') == len(comb) or comb.count('2') == len(comb):
+            return False
         
-        # Verificar totales de signos
-        if filtros.get('validar_totales', True):
+        # Verificar totales de signos - SOLO SI ESTÁ ACTIVADO
+        if filtros.get('validar_totales', False):
             count_1 = comb.count('1')
             count_x = comb.count('X')
             count_2 = comb.count('2')
@@ -472,9 +488,9 @@ class ReductorQuinielas:
                 if figura_actual not in figuras_validas:
                     return False
         
-        # Verificar interrupciones (cambios de signo) - ACTIVO POR DEFECTO (condición crítica)
+        # Verificar interrupciones (cambios de signo) - SOLO SI ESTÁ ACTIVADO
         # Según estadísticas históricas: mínimo 3-4, máximo 7-8 cambios de signo
-        if filtros.get('validar_interrupciones', True):  # ACTIVO POR DEFECTO
+        if filtros.get('validar_interrupciones', False):  # SOLO SI ACTIVO
             interrupciones = self._contar_interrupciones(comb)
             inter_min = filtros.get('interrupciones_min', 3)  # Mínimo 3 por defecto
             inter_max = filtros.get('interrupciones_max', 8)  # Máximo 8 por defecto
