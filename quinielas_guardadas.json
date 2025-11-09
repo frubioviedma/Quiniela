@@ -1210,5 +1210,305 @@
         "tipo": "pleno_15"
       }
     ]
+  },
+  {
+    "temporada": "2025-26",
+    "jornada": 16,
+    "fecha_guardado": "2025-11-04T03:51:23.097875",
+    "partidos": [
+      {
+        "num": 1,
+        "local": "ATLETICO MADRID",
+        "visitante": "UNION SAINT-GILLOISE",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 2,
+        "local": "BODO GLIMT",
+        "visitante": "MONACO",
+        "signos": [
+          "1",
+          "X",
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 3,
+        "local": "JUVENTUS",
+        "visitante": "SPORTING LISBOA",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 4,
+        "local": "OLYMPIAKOS",
+        "visitante": "PSV",
+        "signos": [
+          "1",
+          "X",
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 5,
+        "local": "PSG",
+        "visitante": "BAYERN MUNICH",
+        "signos": [
+          "1",
+          "X",
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 6,
+        "local": "TOTTENHAM",
+        "visitante": "COPENHAGUE",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 7,
+        "local": "PAFOS",
+        "visitante": "VILLARREAL",
+        "signos": [
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 8,
+        "local": "QARABAG",
+        "visitante": "CHELSEA",
+        "signos": [
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 9,
+        "local": "AJAX",
+        "visitante": "GALATASARAY",
+        "signos": [
+          "1",
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 10,
+        "local": "BENFICA",
+        "visitante": "BAYER LEVERKUSEN",
+        "signos": [
+          "1",
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 11,
+        "local": "BRUJAS",
+        "visitante": "FC BARCELONA",
+        "signos": [
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 12,
+        "local": "MANCHESTER CITY",
+        "visitante": "BORUSSIA DORTMUND",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 13,
+        "local": "OLYMPIC MARSELLA",
+        "visitante": "ATALANTA",
+        "signos": [
+          "1",
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 14,
+        "local": "NEWCASTLE UNITED",
+        "visitante": "ATHLETIC CLUB",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 15,
+        "local": "LIVERPOOL",
+        "visitante": "REAL MADRID",
+        "signo_local": "2",
+        "signo_visitante": "2",
+        "tipo": "pleno_15"
+      }
+    ]
+  },
+  {
+    "temporada": "2025-26",
+    "jornada": 9,
+    "fecha_guardado": "2025-11-06T22:13:13.376938",
+    "partidos": [
+      {
+        "num": 1,
+        "local": "GIRONA",
+        "visitante": "ALAVES",
+        "signos": [
+          "1",
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 2,
+        "local": "SEVILLA",
+        "visitante": "OSASUNA",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 3,
+        "local": "ATLETICO MADRID",
+        "visitante": "LEVANTE",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 4,
+        "local": "ESPANYOL",
+        "visitante": "VILLARREAL",
+        "signos": [
+          "1",
+          "X",
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 5,
+        "local": "ATHLETIC BILBAO",
+        "visitante": "OVIEDO",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 6,
+        "local": "VALENCIA",
+        "visitante": "BETIS",
+        "signos": [
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 7,
+        "local": "MALLORCA",
+        "visitante": "GETAFE",
+        "signos": [
+          "1",
+          "X",
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 8,
+        "local": "CELTA",
+        "visitante": "FC BARCELONA",
+        "signos": [
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 9,
+        "local": "HUESCA",
+        "visitante": "ANDORRA",
+        "signos": [
+          "1",
+          "X"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 10,
+        "local": "MALAGA",
+        "visitante": "CORDOBA",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 11,
+        "local": "LAS PALMAS",
+        "visitante": "RAC.SANTANDER",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 12,
+        "local": "CEUTA",
+        "visitante": "ALMERIA",
+        "signos": [
+          "1",
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 13,
+        "local": "GRANADA",
+        "visitante": "ZARAGOZA",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 14,
+        "local": "CADIZ",
+        "visitante": "VALLADOLID",
+        "signos": [
+          "1",
+          "X",
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 15,
+        "local": "RAYO VALLEC.",
+        "visitante": "REAL MADRID",
+        "signo_local": "2",
+        "signo_visitante": "2",
+        "tipo": "pleno_15"
+      }
+    ]
   }
 ]

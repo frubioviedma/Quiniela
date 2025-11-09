@@ -1,10 +1,13 @@
 """Obtención de cuotas de casas de apuestas"""
 import logging
+import time
 from typing import Dict, Optional, List
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from bs4 import BeautifulSoup
 
-from src.config import USER_AGENT
+from src.config import USER_AGENT, REQUEST_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +18,21 @@ class OddsFetcher:
         """Inicializar fetcher de cuotas"""
         self.user_agent = USER_AGENT
         self.casas_compatibles = ['bet365', 'william_hill', 'betfair']
+        self.timeout = REQUEST_TIMEOUT
+        self.max_retries = 3
+        self.retry_backoff = 1
+        
+        # Configurar sesión con retries
+        self.session = requests.Session()
+        retry_strategy = Retry(
+            total=self.max_retries,
+            backoff_factor=self.retry_backoff,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["GET", "POST"]
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
     
     def get_odds_bet365(self, local: str, visitante: str) -> Optional[Dict[str, float]]:
         """
@@ -51,7 +69,17 @@ class OddsFetcher:
         # TODO: Implementar llamada a The Odds API o similar
         # Ejemplo:
         # url = f"https://api.the-odds-api.com/v4/sports/soccer_spain_la_liga/odds"
-        # response = requests.get(url, params={'apiKey': api_key})
+        # try:
+        #     response = self.session.get(
+        #         url, 
+        #         params={'apiKey': api_key},
+        #         timeout=self.timeout
+        #     )
+        #     response.raise_for_status()
+        #     return response.json()
+        # except requests.exceptions.RequestException as e:
+        #     logger.error(f"Error obteniendo cuotas desde API: {e}")
+        #     return None
         
         return None
     

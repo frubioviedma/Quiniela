@@ -1,8 +1,11 @@
 """Web scraping para obtener datos de partidos históricos y actuales"""
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import logging
 import hashlib
 import re
+import time
 from typing import List, Dict, Optional
 from bs4 import BeautifulSoup
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -11,6 +14,7 @@ from src.config import (
     CACHE_DIR,
     USER_AGENT,
     MAX_WORKERS,
+    REQUEST_TIMEOUT,
     URL_BDFUTBOL_BASE,
     URL_QUINIELAS_OFICIAL,
     URL_QUINIELA_RESULTADOS_VIVO,
@@ -28,6 +32,21 @@ class Scraper:
         self.cache_dir = CACHE_DIR
         self.cache_dir.mkdir(exist_ok=True)
         self.user_agent = USER_AGENT
+        self.timeout = REQUEST_TIMEOUT
+        self.max_retries = 3
+        self.retry_backoff = 1  # Segundos entre reintentos
+        
+        # Configurar sesión con retries
+        self.session = requests.Session()
+        retry_strategy = Retry(
+            total=self.max_retries,
+            backoff_factor=self.retry_backoff,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["GET", "POST"]
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
     
     def get_cached_html(self, url: str, use_cache: bool = True) -> str:
         """Obtener HTML desde caché o descargar"""
@@ -51,11 +70,31 @@ class Scraper:
             'Sec-Fetch-Site': 'none',
             'Cache-Control': 'max-age=0'
         }
-        response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
-        if use_cache:
-            cache_file.write_text(response.text, encoding='utf-8')
-        return response.text
+        
+        # Intentar con reintentos
+        for intento in range(self.max_retries):
+            try:
+                response = self.session.get(
+                    url, 
+                    headers=headers, 
+                    timeout=self.timeout
+                )
+                response.raise_for_status()
+                
+                if use_cache:
+                    cache_file.write_text(response.text, encoding='utf-8')
+                
+                logger.info(f"Descarga exitosa: {url}")
+                return response.text
+                
+            except requests.exceptions.RequestException as e:
+                if intento < self.max_retries - 1:
+                    wait_time = self.retry_backoff * (2 ** intento)
+                    logger.warning(f"Error en intento {intento + 1}/{self.max_retries}: {e}. Reintentando en {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    logger.error(f"Error descargando {url} después de {self.max_retries} intentos: {e}")
+                    raise
     
     def clear_cache(self):
         """Limpiar caché de HTML"""

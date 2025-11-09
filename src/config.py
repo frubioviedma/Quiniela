@@ -92,3 +92,40 @@ FILTROS_DEFAULT = {
 # Logging
 LOG_FILE = BASE_DIR / "quiniela.log"
 LOG_LEVEL = "INFO"
+
+# Configuración de logging centralizada
+def setup_logging():
+    """Configurar logging de la aplicación"""
+    import logging
+    import sys
+    
+    # Formato de logs
+    log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    date_format = '%Y-%m-%d %H:%M:%S'
+    
+    # Nivel de logging
+    log_level = getattr(logging, LOG_LEVEL.upper(), logging.INFO)
+    
+    # Handlers
+    handlers = [
+        logging.StreamHandler(sys.stdout),  # Consola
+    ]
+    
+    # Handler de archivo
+    try:
+        file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
+        handlers.append(file_handler)
+    except Exception as e:
+        print(f"Error creando archivo de log: {e}")
+    
+    # Configurar logging
+    logging.basicConfig(
+        level=log_level,
+        format=log_format,
+        datefmt=date_format,
+        handlers=handlers
+    )
+    
+    # Configurar nivel de urllib3 (muy verboso)
+    logging.getLogger('urllib3').setLevel(logging.WARNING)
+    logging.getLogger('requests').setLevel(logging.WARNING)
