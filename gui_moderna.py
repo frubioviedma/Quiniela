@@ -1984,18 +1984,19 @@ class QuinielaModernaApp:
             signos_map = {1: '1', 2: 'X', 3: '2'}
             
             for i, comb in enumerate(combinaciones_reducidas, 1):
-                # Convertir combinación numérica a string de signos
+                # Convertir combinación numérica a string de signos (minúsculas)
                 try:
-                    signos = ''.join([signos_map.get(s, '?') for s in comb])
+                    signos = ''.join([signos_map.get(s, '?').lower() for s in comb])
                 except Exception as e:
                     logger.error(f"Error convirtiendo combinación {i}: {comb}, error: {e}")
                     signos = '?' * len(comb)
                 
-                # Agregar signo del Pleno al 15 si existe
+                # Agregar signo del Pleno al 15 si existe (minúsculas)
                 if signo_pleno_15:
-                    signos += f" [{signo_pleno_15}]"
+                    signos += f" [{signo_pleno_15.lower()}]"
                 
-                self.result_text.insert(tk.END, f"col.{i:4d} {signos}\n")
+                # Formato: "columna 1: 1x2xx1xxx11121"
+                self.result_text.insert(tk.END, f"columna {i}: {signos}\n")
             
             self.result_text.see('1.0')  # Scroll al inicio
             
