@@ -13,8 +13,6 @@ import hashlib
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
-import json
-from datetime import datetime
 
 # Configuración
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
@@ -28,9 +26,15 @@ MAX_WORKERS = 4
 DATA_DIR.mkdir(exist_ok=True)
 CACHE_DIR.mkdir(exist_ok=True)
 
-# Logging centralizado
-from src.config import setup_logging
-setup_logging()
+# Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('quiniela.log'),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
 # Colores modernos
@@ -137,31 +141,16 @@ class QuinielaModernaApp:
         # Crear BD
         self.crear_tablas()
         
-        # Inicializar DatabaseManager
-        from src.database import DatabaseManager
-        self.db = DatabaseManager(DB_PATH)
-        
-        # Inicializar sistema freemium
-        from src.freemium import FreemiumManager
-        self.freemium_manager = FreemiumManager()
-        
         # Inicializar reductor
         from src.reduccion import ReductorQuinielas
         self.reductor = ReductorQuinielas(num_partidos=14)
-        
-        # Variables para reducción
-        self.combinaciones_reducidas = []
-        
-        # Variables para quiniela
-        self.quiniela_guardada = None
-        self.resultados_analisis = []
         
         # Estilo moderno
         self.setup_style()
         self.create_layout()
         
-        # Detectar jornada actual automáticamente
-        self._detectar_jornada_actual()
+        # Variables para reducción
+        self.combinaciones_reducidas = []
     
     def setup_style(self):
         """Configurar estilo moderno"""
@@ -206,36 +195,9 @@ class QuinielaModernaApp:
         header.pack(fill='x', padx=20, pady=20)
         header.pack_propagate(False)
         
-        # Fila 1: Título y estado premium
-        title_row = ttk.Frame(header, style='Modern.TFrame')
-        title_row.pack(fill='x', pady=(0, 5))
-        
-        title = ttk.Label(title_row, text="🎯 Quiniela Pro", 
+        title = ttk.Label(header, text="🎯 Quiniela Pro", 
                          style='Title.TLabel')
-        title.pack(side='left', anchor='w')
-        
-        # Indicador de estado premium
-        self.premium_indicator = ttk.Label(
-            title_row,
-            text="",
-            font=('Segoe UI', 9),
-            style='Modern.TLabel'
-        )
-        self.premium_indicator.pack(side='right', padx=10)
-        
-        # Botón Premium
-        self.premium_btn = ModernButton(
-            title_row,
-            "⭐ Premium",
-            command=self.mostrar_opciones_premium,
-            bg=COLOR_WARNING,
-            width=120,
-            height=30
-        )
-        self.premium_btn.pack(side='right', padx=5)
-        
-        # Actualizar indicador de estado
-        self.actualizar_indicador_premium()
+        title.pack(anchor='w')
         
         subtitle = ttk.Label(header, 
                            text="Sistema inteligente de análisis y pronósticos",
@@ -444,16 +406,6 @@ class QuinielaModernaApp:
         sec1 = ttk.LabelFrame(cond_frame, text="Signos Totales", style='Surface.TFrame')
         sec1.pack(fill='x', padx=20, pady=10)
         
-        # Checkbox para activar/desactivar Signos Totales
-        signos_totales_check_frame = ttk.Frame(sec1, style='Surface.TFrame')
-        signos_totales_check_frame.pack(fill='x', padx=10, pady=5)
-        self.usar_signos_totales = tk.BooleanVar(value=True)
-        tk.Checkbutton(signos_totales_check_frame, text="Activar filtro de Signos Totales",
-                      variable=self.usar_signos_totales,
-                      bg=COLOR_SURFACE, fg=COLOR_FG,
-                      selectcolor=COLOR_SURFACE,
-                      font=('Segoe UI', 10, 'bold')).pack(side='left')
-        
         row1 = ttk.Frame(sec1, style='Surface.TFrame')
         row1.pack(fill='x', padx=10, pady=5)
         ttk.Label(row1, text="Nº Unos:", width=15, style='Modern.TLabel').pack(side='left')
@@ -502,16 +454,6 @@ class QuinielaModernaApp:
         sec2 = ttk.LabelFrame(cond_frame, text="Signos Seguidos", style='Surface.TFrame')
         sec2.pack(fill='x', padx=20, pady=10)
         
-        # Checkbox para activar/desactivar Signos Seguidos
-        signos_seguidos_check_frame = ttk.Frame(sec2, style='Surface.TFrame')
-        signos_seguidos_check_frame.pack(fill='x', padx=10, pady=5)
-        self.usar_signos_seguidos = tk.BooleanVar(value=True)
-        tk.Checkbutton(signos_seguidos_check_frame, text="Activar filtro de Signos Seguidos",
-                      variable=self.usar_signos_seguidos,
-                      bg=COLOR_SURFACE, fg=COLOR_FG,
-                      selectcolor=COLOR_SURFACE,
-                      font=('Segoe UI', 10, 'bold')).pack(side='left')
-        
         row5 = ttk.Frame(sec2, style='Surface.TFrame')
         row5.pack(fill='x', padx=10, pady=5)
         ttk.Label(row5, text="Máx Unos Seguidos:", width=18, style='Modern.TLabel').pack(side='left')
@@ -536,16 +478,6 @@ class QuinielaModernaApp:
         # Sección 3: Interrupciones (Cambios de Signo)
         sec3 = ttk.LabelFrame(cond_frame, text="Interrupciones (Cambios de Signo)", style='Surface.TFrame')
         sec3.pack(fill='x', padx=20, pady=10)
-        
-        # Checkbox para activar/desactivar Interrupciones
-        interrupciones_check_frame = ttk.Frame(sec3, style='Surface.TFrame')
-        interrupciones_check_frame.pack(fill='x', padx=10, pady=5)
-        self.usar_interrupciones = tk.BooleanVar(value=True)
-        tk.Checkbutton(interrupciones_check_frame, text="Activar filtro de Interrupciones",
-                      variable=self.usar_interrupciones,
-                      bg=COLOR_SURFACE, fg=COLOR_FG,
-                      selectcolor=COLOR_SURFACE,
-                      font=('Segoe UI', 10, 'bold')).pack(side='left')
         
         row8 = ttk.Frame(sec3, style='Surface.TFrame')
         row8.pack(fill='x', padx=10, pady=5)
@@ -669,102 +601,14 @@ class QuinielaModernaApp:
         cond_frame.bind('<Configure>', on_cond_configure)
     
     def create_analisis_tab(self):
-        """Pestaña de análisis - Comparar quinielas con resultados"""
+        """Pestaña de análisis"""
         frame = ttk.Frame(self.notebook, style='Modern.TFrame')
         self.notebook.add(frame, text='📈 Análisis')
         
-        # Header con controles
-        header = ttk.Frame(frame, style='Surface.TFrame')
-        header.pack(fill='x', padx=20, pady=20)
-        
-        header_content = ttk.Frame(header, style='Surface.TFrame')
-        header_content.pack(padx=20, pady=15)
-        
-        ttk.Label(header_content, text="Análisis de Aciertos",
-                 font=('Segoe UI', 18, 'bold'),
-                 style='Modern.TLabel').grid(row=0, column=0, columnspan=4, pady=(0, 15))
-        
-        # Fila 1: Selección de temporada y jornada
-        row1 = ttk.Frame(header_content, style='Surface.TFrame')
-        row1.grid(row=1, column=0, columnspan=4, pady=10)
-        
-        ttk.Label(row1, text="Temporada:", style='Modern.TLabel').pack(side='left', padx=5)
-        self.analisis_temporada = ttk.Combobox(row1, width=15, state='readonly')
-        self.analisis_temporada['values'] = ['2025-26', '2024-25', '2023-24', '2022-23', '2021-22', '2020-21']
-        self.analisis_temporada.current(0)
-        self.analisis_temporada.pack(side='left', padx=5)
-        
-        ttk.Label(row1, text="Jornada:", style='Modern.TLabel').pack(side='left', padx=5)
-        self.analisis_jornada = ttk.Spinbox(row1, from_=1, to=70, width=10)
-        self.analisis_jornada.set(1)
-        self.analisis_jornada.pack(side='left', padx=5)
-        
-        # Fila 2: Botones de acción
-        row2 = ttk.Frame(header_content, style='Surface.TFrame')
-        row2.grid(row=2, column=0, columnspan=4, pady=15)
-        
-        ModernButton(row2, "💾 Guardar Quiniela Actual",
-                    command=self.guardar_quiniela_actual,
-                    bg=COLOR_SUCCESS, width=200).pack(side='left', padx=5)
-        
-        ModernButton(row2, "📂 Cargar Quiniela Guardada",
-                    command=self.cargar_quiniela_guardada,
-                    bg=COLOR_ACCENT, width=200).pack(side='left', padx=5)
-        
-        ModernButton(row2, "🔄 Cargar Resultados",
-                    command=self.cargar_resultados_analisis,
-                    bg=COLOR_WARNING, width=200).pack(side='left', padx=5)
-        
-        ModernButton(row2, "📊 Comparar",
-                    command=self.comparar_quiniela_resultados,
-                    bg="#9333ea", width=200).pack(side='left', padx=5)
-        
-        # Tabla de comparación
-        table_frame = ttk.Frame(frame, style='Surface.TFrame')
-        table_frame.pack(fill='both', expand=True, padx=20, pady=(0, 20))
-        
-        ttk.Label(table_frame, text="Comparación Quiniela vs Resultados",
-                 font=('Segoe UI', 14, 'bold'),
-                 style='Modern.TLabel').pack(anchor='w', pady=(0, 10))
-        
-        # Treeview para mostrar comparación
-        tree_frame = ttk.Frame(table_frame, style='Surface.TFrame')
-        tree_frame.pack(fill='both', expand=True)
-        
-        columns = ('Partido', 'Mi Quiniela', 'Resultado Real', 'Acierto')
-        self.tree_analisis = ttk.Treeview(tree_frame, columns=columns, show='headings', height=15)
-        
-        for col in columns:
-            self.tree_analisis.heading(col, text=col)
-            width = 80 if col == 'Partido' else (200 if col == 'Mi Quiniela' else (200 if col == 'Resultado Real' else 100))
-            self.tree_analisis.column(col, width=width, anchor='center')
-        
-        # Configurar tags de color
-        self.tree_analisis.tag_configure('acierto', background='#4a2a2a', foreground='#ffffff')  # Rojo oscuro para aciertos
-        self.tree_analisis.tag_configure('error', background='#2a2a2a', foreground='#ff6666')  # Gris oscuro para errores
-        self.tree_analisis.tag_configure('pendiente', background='#2a2a4a', foreground='#ffff99')  # Azul oscuro para pendientes
-        
-        scrollbar_analisis = ttk.Scrollbar(tree_frame, orient='vertical', command=self.tree_analisis.yview)
-        self.tree_analisis.configure(yscrollcommand=scrollbar_analisis.set)
-        
-        self.tree_analisis.pack(side='left', fill='both', expand=True)
-        scrollbar_analisis.pack(side='right', fill='y')
-        
-        # Estadísticas
-        stats_frame = ttk.Frame(frame, style='Surface.TFrame')
-        stats_frame.pack(fill='x', padx=20, pady=(0, 20))
-        
-        self.stats_label = ttk.Label(stats_frame, text="",
-                 font=('Segoe UI', 12, 'bold'),
-                 style='Modern.TLabel')
-        self.stats_label.pack(pady=10)
-        
-        # Variables para almacenar datos
-        self.quiniela_guardada = None
-        self.resultados_analisis = None
-        
-        # Archivo para guardar quinielas
-        self.quinielas_file = BASE_DIR / "quinielas_guardadas.json"
+        label = ttk.Label(frame, text="Análisis Estadístico",
+                         font=('Segoe UI', 18, 'bold'),
+                         style='Modern.TLabel')
+        label.pack(pady=50)
     
     # ========== MÉTODOS FUNCIONALES (de interfaz_v3.py) ==========
     
@@ -1048,16 +892,6 @@ class QuinielaModernaApp:
     
     def ir_a_crear_quiniela(self):
         """Ir a la pestaña de pronósticos y preparar la quiniela"""
-        from src.anuncios import verificar_acceso_premium
-        verificar_acceso_premium(
-            self.root,
-            "crear_pronosticos",
-            self._ir_a_crear_quiniela_real,
-            self.freemium_manager
-        )
-    
-    def _ir_a_crear_quiniela_real(self):
-        """Método real que crea la quiniela"""
         # Verificar que hay partidos con probabilidades
         items = self.tree.get_children()
         if not items:
@@ -1337,7 +1171,7 @@ class QuinielaModernaApp:
             
             local = partido.get('local', '')
             visitante = partido.get('visitante', '')
-            temporada = self.temporada_combo.get() if hasattr(self, 'temporada_combo') else '2025-26'
+            temporada = self.temporada_var.get() if hasattr(self, 'temporada_var') else '2025-26'
             
             if not local or not visitante:
                 # Valores por defecto para ambos equipos
@@ -1544,16 +1378,6 @@ class QuinielaModernaApp:
     
     def cargar_quiniela_oficial(self):
         """Scrapear quiniela oficial desde webprincipal.com"""
-        from src.anuncios import verificar_acceso_premium
-        verificar_acceso_premium(
-            self.root,
-            "descargar_quiniela",
-            self._cargar_quiniela_oficial_real,
-            self.freemium_manager
-        )
-    
-    def _cargar_quiniela_oficial_real(self):
-        """Método real que ejecuta el scraping"""
         url = "https://www.webprincipal.com/quiniela/quiniela.php"
         
         def scraping_thread():
@@ -1739,39 +1563,13 @@ class QuinielaModernaApp:
         messagebox.showinfo("Cargando", "Cargando quiniela oficial desde webprincipal.com...")
     
     def mostrar_quiniela_oficial(self, partidos, porcentajes_data):
-        """Mostrar quiniela oficial en la tabla y guardarla en BD"""
+        """Mostrar quiniela oficial en la tabla"""
         # Limpiar tabla
         for item in self.tree.get_children():
             self.tree.delete(item)
         
         # Ordenar por número
         partidos_ordenados = sorted(partidos, key=lambda x: x['num'])
-        
-        # Obtener temporada y jornada actual
-        temporada = self.temporada_combo.get() if hasattr(self, 'temporada_combo') else '2025-26'
-        jornada = int(self.jornada_spin.get()) if hasattr(self, 'jornada_spin') else 1
-        
-        # Guardar en jornada_actual
-        try:
-            matches_to_save = []
-            for partido in partidos_ordenados:
-                if partido.get('local') and partido.get('visitante'):
-                    matches_to_save.append({
-                        'partido_numero': partido['num'],
-                        'local': partido['local'],
-                        'visitante': partido['visitante'],
-                        'fecha': partido.get('fecha', ''),
-                        'division': None  # No sabemos la división, se puede actualizar después
-                    })
-            
-            if matches_to_save:
-                # Guardar en jornada_actual usando el método del database manager
-                from src.database import DatabaseManager
-                db = DatabaseManager(DB_PATH)
-                db.save_current_round_matches(matches_to_save, temporada, jornada)
-                logger.info(f"✅ Guardados {len(matches_to_save)} partidos en jornada_actual (temporada {temporada}, jornada {jornada})")
-        except Exception as e:
-            logger.error(f"Error guardando quiniela oficial en BD: {e}", exc_info=True)
         
         # Mostrar en tabla
         for i, partido in enumerate(partidos_ordenados):
@@ -1804,8 +1602,7 @@ class QuinielaModernaApp:
             ))
         
         messagebox.showinfo("Éxito", 
-            f"✅ Cargados {len(partidos_ordenados)} partidos de la quiniela oficial\n"
-            f"✅ Guardados en BD (temporada {temporada}, jornada {jornada})")
+            f"✅ Cargados {len(partidos_ordenados)} partidos de la quiniela oficial")
     
     def ir_a_reducir(self):
         """Ir a la pestaña de reducción"""
@@ -1816,16 +1613,6 @@ class QuinielaModernaApp:
     
     def aplicar_condiciones(self):
         """Aplicar condiciones a la quiniela (solo filtrado, no reducción)"""
-        from src.anuncios import verificar_acceso_premium
-        verificar_acceso_premium(
-            self.root,
-            "aplicar_condiciones",
-            self._aplicar_condiciones_real,
-            self.freemium_manager
-        )
-    
-    def _aplicar_condiciones_real(self):
-        """Método real que aplica las condiciones"""
         if not self.quiniela_partidos:
             messagebox.showwarning("Advertencia", "Primero crea la quiniela en la pestaña 'Pronósticos'")
             return
@@ -1862,16 +1649,6 @@ class QuinielaModernaApp:
     
     def aplicar_reduccion(self):
         """Aplicar reducción al 13, 12 o 11"""
-        from src.anuncios import verificar_acceso_premium
-        verificar_acceso_premium(
-            self.root,
-            "aplicar_reduccion",
-            self._aplicar_reduccion_real,
-            self.freemium_manager
-        )
-    
-    def _aplicar_reduccion_real(self):
-        """Método real que aplica la reducción"""
         if not self.quiniela_partidos:
             messagebox.showwarning("Advertencia", "Primero crea la quiniela en la pestaña 'Pronósticos'")
             return
@@ -1912,68 +1689,34 @@ class QuinielaModernaApp:
             objetivo = int(self.objetivo_reduccion.get())
             
             # Construir filtros desde las condiciones
-            # IMPORTANTE: Los nombres deben coincidir con los que espera _validar_combinacion
             filtros = {
-                # Activar validaciones según checkboxes
-                'validar_totales': self.usar_signos_totales.get(),
-                'validar_consecutivos': self.usar_signos_seguidos.get(),
-                'validar_interrupciones': self.usar_interrupciones.get(),
-                'validar_pares_signos': self.usar_parejas.get(),
-                'validar_trios_signos': self.usar_trios.get(),
+                'min_unos': int(self.min_unos.get()),
+                'max_unos': int(self.max_unos.get()),
+                'min_equis': int(self.min_equis.get()),
+                'max_equis': int(self.max_equis.get()),
+                'min_doses': int(self.min_doses.get()),
+                'max_doses': int(self.max_doses.get()),
+                'min_variantes': int(self.min_variantes.get()),
+                'max_variantes': int(self.max_variantes.get()),
+                'max_unos_seguidos': int(self.max_unos_seguidos.get()),
+                'max_equis_seguidos': int(self.max_equis_seguidos.get()),
+                'max_doses_seguidos': int(self.max_doses_seguidos.get()),
+                'min_interrupciones': int(self.min_interrupciones.get()),
+                'max_interrupciones': int(self.max_interrupciones.get()),
             }
-            
-            # Solo agregar valores si el filtro está activado
-            if self.usar_signos_totales.get():
-                filtros.update({
-                    # Signos totales (min/max)
-                    'total_1s_min': int(self.min_unos.get()),
-                    'total_1s_max': int(self.max_unos.get()),
-                    'total_xs_min': int(self.min_equis.get()),
-                    'total_xs_max': int(self.max_equis.get()),
-                    'total_2s_min': int(self.min_doses.get()),
-                    'total_2s_max': int(self.max_doses.get()),
-                    'total_variantes_min': int(self.min_variantes.get()),
-                    'total_variantes_max': int(self.max_variantes.get()),
-                })
-            
-            if self.usar_signos_seguidos.get():
-                filtros.update({
-                    # Signos seguidos (máximo)
-                    'max_seguidos_1': int(self.max_unos_seguidos.get()),
-                    'max_seguidos_X': int(self.max_equis_seguidos.get()),
-                    'max_seguidos_2': int(self.max_doses_seguidos.get()),
-                })
-            
-            if self.usar_interrupciones.get():
-                filtros.update({
-                    # Interrupciones (cambios de signo)
-                    'interrupciones_min': int(self.min_interrupciones.get()),
-                    'interrupciones_max': int(self.max_interrupciones.get()),
-                })
             
             # Agregar parejas solo si están activadas
             if self.usar_parejas.get():
-                parejas_limites = {}
                 for pareja, var in self.max_parejas.items():
-                    parejas_limites[pareja] = {
-                        'min': 0,
-                        'max': int(var.get())
-                    }
-                filtros['parejas_limites'] = parejas_limites
+                    filtros[f'max_pareja_{pareja}'] = int(var.get())
             
             # Agregar tríos solo si están activados
             if self.usar_trios.get():
-                trios_limites = {}
                 for trio, var in self.max_trios.items():
-                    trios_limites[trio] = {
-                        'min': 0,
-                        'max': int(var.get())
-                    }
-                filtros['trios_limites'] = trios_limites
+                    filtros[f'max_trio_{trio}'] = int(var.get())
             
             # Aplicar reducción
             logger.info(f"Aplicando reducción al {objetivo} con {len(dobles)} dobles y {len(triples)} triples")
-            logger.info(f"Filtros aplicados: {filtros}")
             combinaciones_reducidas = self.reductor.reducir_inteligente(
                 dobles=dobles,
                 triples=triples,
@@ -1988,24 +1731,18 @@ class QuinielaModernaApp:
             self.result_text.delete('1.0', tk.END)
             self.result_text.insert('1.0', f"Columnas resultantes ({len(combinaciones_reducidas)} totales):\n\n")
             
-            # Convertir combinaciones numéricas a signos
-            # El reductor usa: 1='1', 2='X', 3='2'
-            signos_map = {1: '1', 2: 'X', 3: '2'}
+            # Convertir combinaciones numéricas a signos (1, X, 2)
+            signos_map = {0: '1', 1: 'X', 2: '2'}
             
             for i, comb in enumerate(combinaciones_reducidas, 1):
-                # Convertir combinación numérica a string de signos (minúsculas)
-                try:
-                    signos = ''.join([signos_map.get(s, '?').lower() for s in comb])
-                except Exception as e:
-                    logger.error(f"Error convirtiendo combinación {i}: {comb}, error: {e}")
-                    signos = '?' * len(comb)
+                # Convertir combinación numérica a string de signos
+                signos = ''.join([signos_map[s] for s in comb])
                 
-                # Agregar signo del Pleno al 15 si existe (minúsculas)
+                # Agregar signo del Pleno al 15 si existe
                 if signo_pleno_15:
-                    signos += f" [{signo_pleno_15.lower()}]"
+                    signos += f" [{signo_pleno_15}]"
                 
-                # Formato: "columna 1: 1x2xx1xxx11121"
-                self.result_text.insert(tk.END, f"columna {i}: {signos}\n")
+                self.result_text.insert(tk.END, f"col.{i:4d} {signos}\n")
             
             self.result_text.see('1.0')  # Scroll al inicio
             
@@ -2015,684 +1752,6 @@ class QuinielaModernaApp:
         except Exception as e:
             messagebox.showerror("Error", f"Error aplicando reducción: {e}")
             logger.error(f"Error aplicando reducción: {e}", exc_info=True)
-    
-    def guardar_quiniela_actual(self):
-        """Guardar la quiniela actual en un fichero JSON"""
-        from src.anuncios import verificar_acceso_premium
-        verificar_acceso_premium(
-            self.root,
-            "exportar_quinielas",
-            self._guardar_quiniela_actual_real,
-            self.freemium_manager
-        )
-    
-    def _guardar_quiniela_actual_real(self):
-        """Método real que guarda la quiniela"""
-        if not self.quiniela_partidos:
-            messagebox.showwarning("Advertencia", "No hay quiniela para guardar. Primero crea una en 'Pronósticos'")
-            return
-        
-        try:
-            # Obtener temporada y jornada actual
-            temporada = self.temporada_combo.get() if hasattr(self, 'temporada_combo') else '2025-26'
-            jornada = int(self.jornada_spin.get()) if hasattr(self, 'jornada_spin') else 1
-            
-            # Construir la quiniela guardada
-            quiniela_data = {
-                'temporada': temporada,
-                'jornada': jornada,
-                'fecha_guardado': datetime.now().isoformat(),
-                'partidos': []
-            }
-            
-            for partido_ui in self.quiniela_partidos:
-                num_partido = partido_ui.get('num', 0)
-                partido_info = partido_ui.get('partido', {})
-                
-                if num_partido == 15:
-                    # Pleno al 15
-                    vars_partido = partido_ui['vars']
-                    local_seleccionado = [s for s in ['0', '1', '2', 'M'] if vars_partido['local'][s].get()]
-                    visitante_seleccionado = [s for s in ['0', '1', '2', 'M'] if vars_partido['visitante'][s].get()]
-                    
-                    quiniela_data['partidos'].append({
-                        'num': 15,
-                        'local': partido_info.get('local', ''),
-                        'visitante': partido_info.get('visitante', ''),
-                        'signo_local': local_seleccionado[0] if local_seleccionado else '',
-                        'signo_visitante': visitante_seleccionado[0] if visitante_seleccionado else '',
-                        'tipo': 'pleno_15'
-                    })
-                else:
-                    # Partidos 1-14
-                    vars_partido = partido_ui['vars']
-                    seleccionados = [s for s in ['1', 'X', '2'] if vars_partido[s].get()]
-                    
-                    quiniela_data['partidos'].append({
-                        'num': num_partido,
-                        'local': partido_info.get('local', ''),
-                        'visitante': partido_info.get('visitante', ''),
-                        'signos': seleccionados,
-                        'tipo': 'normal'
-                    })
-            
-            # Cargar quinielas existentes o crear lista nueva
-            if self.quinielas_file.exists():
-                with open(self.quinielas_file, 'r', encoding='utf-8') as f:
-                    quinielas = json.load(f)
-            else:
-                quinielas = []
-            
-            # Agregar nueva quiniela
-            quinielas.append(quiniela_data)
-            
-            # Guardar
-            with open(self.quinielas_file, 'w', encoding='utf-8') as f:
-                json.dump(quinielas, f, indent=2, ensure_ascii=False)
-            
-            messagebox.showinfo("Éxito", 
-                f"✅ Quiniela guardada:\nTemporada: {temporada}\nJornada: {jornada}\nTotal partidos: {len(quiniela_data['partidos'])}")
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"Error guardando quiniela: {e}")
-            logger.error(f"Error guardando quiniela: {e}", exc_info=True)
-    
-    def cargar_quiniela_guardada(self):
-        """Cargar una quiniela guardada desde el fichero JSON"""
-        if not self.quinielas_file.exists():
-            messagebox.showinfo("Información", "No hay quinielas guardadas")
-            return
-        
-        try:
-            # Cargar quinielas
-            with open(self.quinielas_file, 'r', encoding='utf-8') as f:
-                quinielas = json.load(f)
-            
-            if not quinielas:
-                messagebox.showinfo("Información", "No hay quinielas guardadas")
-                return
-            
-            # Crear diálogo para seleccionar quiniela
-            dialog = tk.Toplevel(self.root)
-            dialog.title("Seleccionar Quiniela")
-            dialog.geometry("600x400")
-            dialog.configure(bg=COLOR_BG)
-            
-            ttk.Label(dialog, text="Selecciona una quiniela guardada:",
-                     font=('Segoe UI', 12, 'bold'),
-                     style='Modern.TLabel').pack(pady=10)
-            
-            # Listbox con quinielas
-            listbox_frame = ttk.Frame(dialog, style='Surface.TFrame')
-            listbox_frame.pack(fill='both', expand=True, padx=20, pady=10)
-            
-            listbox = tk.Listbox(listbox_frame, bg=COLOR_SURFACE, fg=COLOR_FG,
-                               font=('Segoe UI', 10), height=15)
-            scrollbar_list = ttk.Scrollbar(listbox_frame, orient='vertical', command=listbox.yview)
-            listbox.configure(yscrollcommand=scrollbar_list.set)
-            
-            for q in quinielas:
-                fecha = q.get('fecha_guardado', '')[:10] if q.get('fecha_guardado') else 'Sin fecha'
-                texto = f"{q.get('temporada', '?')} - Jornada {q.get('jornada', '?')} ({fecha})"
-                listbox.insert(tk.END, texto)
-            
-            listbox.pack(side='left', fill='both', expand=True)
-            scrollbar_list.pack(side='right', fill='y')
-            
-            def seleccionar():
-                seleccion = listbox.curselection()
-                if seleccion:
-                    idx = seleccion[0]
-                    self.quiniela_guardada = quinielas[idx]
-                    dialog.destroy()
-                    messagebox.showinfo("Éxito", 
-                        f"✅ Quiniela cargada:\nTemporada: {self.quiniela_guardada.get('temporada')}\nJornada: {self.quiniela_guardada.get('jornada')}")
-                else:
-                    messagebox.showwarning("Advertencia", "Selecciona una quiniela")
-            
-            btn_frame = ttk.Frame(dialog, style='Surface.TFrame')
-            btn_frame.pack(pady=10)
-            
-            ModernButton(btn_frame, "Seleccionar",
-                        command=seleccionar,
-                        bg=COLOR_SUCCESS, width=150).pack(side='left', padx=5)
-            
-            ModernButton(btn_frame, "Cancelar",
-                        command=dialog.destroy,
-                        bg=COLOR_ERROR, width=150).pack(side='left', padx=5)
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"Error cargando quiniela: {e}")
-            logger.error(f"Error cargando quiniela: {e}", exc_info=True)
-    
-    def cargar_resultados_analisis(self):
-        """Cargar resultados desde BD o scraping - BUSCAR LOS 15 PARTIDOS DE LA QUINIELA"""
-        from src.anuncios import verificar_acceso_premium
-        verificar_acceso_premium(
-            self.root,
-            "comparar_resultados",
-            self._cargar_resultados_analisis_real,
-            self.freemium_manager
-        )
-    
-    def _cargar_resultados_analisis_real(self):
-        """Método real que carga los resultados"""
-        try:
-            temporada = self.analisis_temporada.get()
-            jornada = int(self.analisis_jornada.get())
-            
-            # Cargar desde BD - PRIMERO buscar en jornada_actual (los 15 partidos de la quiniela)
-            with sqlite3.connect(DB_PATH) as conn:
-                cur = conn.cursor()
-                
-                # Verificar si existe la tabla jornada_actual
-                cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='jornada_actual'")
-                tabla_existe = cur.fetchone()
-                
-                resultados = []
-                
-                if tabla_existe:
-                    # Buscar en jornada_actual (tiene los 15 partidos de la quiniela) - solo equipos
-                    cur.execute('''
-                        SELECT partido_numero, local, visitante
-                        FROM jornada_actual
-                        WHERE temporada = ? AND jornada = ?
-                        ORDER BY partido_numero
-                    ''', (temporada, jornada))
-                    
-                    partidos_jornada = cur.fetchall()
-                    
-                    # IMPORTANTE: Cargar TODOS los partidos (con o sin resultados)
-                    # No filtrar por si tienen resultados, incluir todos los 15
-                    if partidos_jornada:
-                        logger.info(f"Encontrados {len(partidos_jornada)} partidos en jornada_actual")
-                        
-                        # Buscar resultados en resultados_en_vivo o tablas históricas
-                        for partido in partidos_jornada:
-                            num = partido[0] if partido[0] else 0
-                            local = partido[1] if partido[1] else ''
-                            visitante = partido[2] if partido[2] else ''
-                            
-                            if not local or not visitante:
-                                logger.warning(f"Partido {num} sin equipos: local={local}, visitante={visitante}")
-                                continue
-                            
-                            goles_local = None
-                            goles_visitante = None
-                            quiniela = None
-                            
-                            # Buscar resultados en resultados_en_vivo primero
-                            cur.execute('''
-                                SELECT goles_local, goles_visitante
-                                FROM resultados_en_vivo
-                                WHERE temporada = ? AND jornada = ? AND partido_numero = ?
-                                LIMIT 1
-                            ''', (temporada, jornada, num))
-                            
-                            res_vivo = cur.fetchone()
-                            
-                            if res_vivo and res_vivo[0] is not None and res_vivo[1] is not None:
-                                # Tenemos resultados en vivo
-                                goles_local = res_vivo[0]
-                                goles_visitante = res_vivo[1]
-                                
-                                # Calcular quiniela
-                                if goles_local > goles_visitante:
-                                    quiniela = '1'
-                                elif goles_local == goles_visitante:
-                                    quiniela = 'X'
-                                else:
-                                    quiniela = '2'
-                                
-                                logger.debug(f"Partido {num}: resultados encontrados en resultados_en_vivo")
-                            else:
-                                # Buscar en tablas históricas por nombre de equipos
-                                cur.execute('''
-                                    SELECT goles_local, goles_visitante, quiniela
-                                    FROM primera_division
-                                    WHERE temporada = ? AND jornada = ? AND local = ? AND visitante = ?
-                                    LIMIT 1
-                                ''', (temporada, jornada, local, visitante))
-                                
-                                res_hist = cur.fetchone()
-                                
-                                if not res_hist:
-                                    cur.execute('''
-                                        SELECT goles_local, goles_visitante, quiniela
-                                        FROM segunda_division
-                                        WHERE temporada = ? AND jornada = ? AND local = ? AND visitante = ?
-                                        LIMIT 1
-                                    ''', (temporada, jornada, local, visitante))
-                                    res_hist = cur.fetchone()
-                                
-                                if res_hist:
-                                    goles_local = res_hist[0]
-                                    goles_visitante = res_hist[1]
-                                    quiniela = res_hist[2]
-                                    logger.debug(f"Partido {num}: resultados encontrados en tablas históricas")
-                            
-                            # IMPORTANTE: Agregar TODOS los partidos, incluso si no tienen resultados
-                            resultados.append((
-                                num,  # partido_numero
-                                local,  # local
-                                visitante,  # visitante
-                                goles_local,  # goles_local (puede ser None)
-                                goles_visitante,  # goles_visitante (puede ser None)
-                                quiniela  # quiniela (puede ser None)
-                            ))
-                        
-                        logger.info(f"Cargados {len(resultados)} partidos de jornada_actual (incluyendo pendientes)")
-                
-                # Si no hay 15 partidos en jornada_actual, intentar completar desde otras fuentes
-                if len(resultados) < 15:
-                    logger.warning(f"Solo {len(resultados)} partidos cargados de jornada_actual, esperados 15")
-                    
-                    # Obtener números de partidos ya cargados
-                    numeros_cargados = {r[0] for r in resultados}
-                    
-                    # Buscar partidos faltantes (1-15)
-                    for num in range(1, 16):
-                        if num in numeros_cargados:
-                            continue  # Ya está cargado
-                        
-                        # Buscar en tablas históricas para completar
-                        # Primero intentar encontrar por número de partido en resultados_en_vivo
-                        cur.execute('''
-                            SELECT partido_numero, local, visitante, goles_local, goles_visitante
-                            FROM resultados_en_vivo
-                            WHERE temporada = ? AND jornada = ? AND partido_numero = ?
-                            LIMIT 1
-                        ''', (temporada, jornada, num))
-                        
-                        res_vivo = cur.fetchone()
-                        
-                        if res_vivo:
-                            local = res_vivo[1] or ''
-                            visitante = res_vivo[2] or ''
-                            goles_local = res_vivo[3]
-                            goles_visitante = res_vivo[4]
-                            
-                            if goles_local is not None and goles_visitante is not None:
-                                if goles_local > goles_visitante:
-                                    quiniela = '1'
-                                elif goles_local == goles_visitante:
-                                    quiniela = 'X'
-                                else:
-                                    quiniela = '2'
-                            else:
-                                quiniela = None
-                            
-                            resultados.append((
-                                num,
-                                local,
-                                visitante,
-                                goles_local,
-                                goles_visitante,
-                                quiniela
-                            ))
-                            logger.info(f"Partido {num} cargado desde resultados_en_vivo")
-                        else:
-                            # Si no está en resultados_en_vivo, buscar en jornada_actual sin resultados
-                            cur.execute('''
-                                SELECT partido_numero, local, visitante
-                                FROM jornada_actual
-                                WHERE temporada = ? AND jornada = ? AND partido_numero = ?
-                                LIMIT 1
-                            ''', (temporada, jornada, num))
-                            
-                            partido_jornada = cur.fetchone()
-                            
-                            if partido_jornada:
-                                local = partido_jornada[1] or ''
-                                visitante = partido_jornada[2] or ''
-                                
-                                # Intentar buscar resultados en tablas históricas
-                                cur.execute('''
-                                    SELECT goles_local, goles_visitante, quiniela
-                                    FROM primera_division
-                                    WHERE temporada = ? AND jornada = ? AND local = ? AND visitante = ?
-                                    LIMIT 1
-                                ''', (temporada, jornada, local, visitante))
-                                
-                                res_hist = cur.fetchone()
-                                
-                                if not res_hist:
-                                    cur.execute('''
-                                        SELECT goles_local, goles_visitante, quiniela
-                                        FROM segunda_division
-                                        WHERE temporada = ? AND jornada = ? AND local = ? AND visitante = ?
-                                        LIMIT 1
-                                    ''', (temporada, jornada, local, visitante))
-                                    res_hist = cur.fetchone()
-                                
-                                if res_hist:
-                                    resultados.append((
-                                        num,
-                                        local,
-                                        visitante,
-                                        res_hist[0],
-                                        res_hist[1],
-                                        res_hist[2]
-                                    ))
-                                    logger.info(f"Partido {num} cargado desde tablas históricas")
-                                else:
-                                    # Partido pendiente (sin resultados)
-                                    resultados.append((
-                                        num,
-                                        local,
-                                        visitante,
-                                        None,
-                                        None,
-                                        None
-                                    ))
-                                    logger.info(f"Partido {num} agregado como pendiente (sin resultados)")
-                
-                # Si aún no hay resultados, intentar scraping
-                if not resultados:
-                    messagebox.showwarning("Advertencia", 
-                        f"No se encontraron resultados en BD para {temporada} jornada {jornada}\n"
-                        "Intentando scraping...")
-                    
-                    # Intentar scraping
-                    from src.scraper import Scraper
-                    scraper = Scraper()
-                    partidos = scraper.scrape_current_round_bdfutbol(temporada.split('-')[0], jornada, 1)
-                    
-                    if partidos:
-                        resultados = []
-                        for p in partidos:
-                            signo = p.get('quiniela', '')
-                            num = p.get('partido_numero', 0)
-                            if signo and num:
-                                resultados.append((
-                                    num,
-                                    p.get('local', ''),
-                                    p.get('visitante', ''),
-                                    p.get('goles_local', 0),
-                                    p.get('goles_visitante', 0),
-                                    signo
-                                ))
-                
-                # Limitar a 15 partidos máximo
-                if len(resultados) > 15:
-                    resultados = resultados[:15]
-                    logger.warning(f"Limitados los resultados a 15 partidos (había {len(resultados)})")
-                
-                if resultados:
-                    self.resultados_analisis = resultados
-                    messagebox.showinfo("Éxito", 
-                        f"✅ Resultados cargados:\n{len(resultados)} partidos encontrados (de 15 esperados)")
-                else:
-                    messagebox.showwarning("Advertencia", 
-                        "No se encontraron resultados. La jornada puede no haber finalizado aún.")
-                    
-        except Exception as e:
-            messagebox.showerror("Error", f"Error cargando resultados: {e}")
-            logger.error(f"Error cargando resultados: {e}", exc_info=True)
-    
-    def comparar_quiniela_resultados(self):
-        """Comparar quiniela guardada con resultados reales"""
-        from src.anuncios import verificar_acceso_premium
-        verificar_acceso_premium(
-            self.root,
-            "comparar_resultados",
-            self._comparar_quiniela_resultados_real,
-            self.freemium_manager
-        )
-    
-    def _comparar_quiniela_resultados_real(self):
-        """Método real que compara la quiniela"""
-        if not self.quiniela_guardada:
-            messagebox.showwarning("Advertencia", "Primero carga una quiniela guardada")
-            return
-        
-        if not self.resultados_analisis:
-            messagebox.showwarning("Advertencia", "Primero carga los resultados")
-            return
-        
-        try:
-            # Limpiar tabla
-            for item in self.tree_analisis.get_children():
-                self.tree_analisis.delete(item)
-            
-            quiniela = self.quiniela_guardada
-            resultados = self.resultados_analisis
-            aciertos = 0
-            total = 0
-            
-            # Crear diccionario de resultados por número de partido
-            resultados_dict = {}
-            for r in resultados:
-                num = r[0]
-                resultados_dict[num] = {
-                    'local': r[1],
-                    'visitante': r[2],
-                    'goles_local': r[3],
-                    'goles_visitante': r[4],
-                    'signo': r[5]
-                }
-            
-            # Comparar cada partido
-            for partido_data in quiniela['partidos']:
-                num = partido_data['num']
-                
-                if num == 15:
-                    # Pleno al 15 - comparar goles
-                    signo_local = partido_data.get('signo_local', '')
-                    signo_visitante = partido_data.get('signo_visitante', '')
-                    
-                    if num in resultados_dict:
-                        r = resultados_dict[num]
-                        goles_local = r.get('goles_local')
-                        goles_visitante = r.get('goles_visitante')
-                        
-                        if goles_local is not None and goles_visitante is not None:
-                            # Calcular signo real del Pleno al 15
-                            total_goles = goles_local + goles_visitante
-                            if total_goles == 0:
-                                signo_real = '0'
-                            elif total_goles == 1:
-                                signo_real = '1'
-                            elif total_goles == 2:
-                                signo_real = '2'
-                            else:
-                                signo_real = 'M'
-                            
-                            # Comparar
-                            mi_quiniela = f"{signo_local}-{signo_visitante}"
-                            resultado_real = f"{goles_local}-{goles_visitante} ({signo_real})"
-                            
-                            # Para el Pleno al 15, se acierta si el total de goles coincide
-                            acierto = (signo_local == signo_real or signo_visitante == signo_real)
-                            
-                            if acierto:
-                                aciertos += 1
-                            total += 1
-                            
-                            item = self.tree_analisis.insert('', 'end', values=(
-                                f"P-{num}",
-                                mi_quiniela,
-                                resultado_real,
-                                "✅" if acierto else "❌"
-                            ))
-                            # Marcar color: rojo para aciertos, gris para errores
-                            if acierto:
-                                self.tree_analisis.set(item, 'Acierto', '✅')
-                                self.tree_analisis.item(item, tags=('acierto',))
-                            else:
-                                self.tree_analisis.set(item, 'Acierto', '❌')
-                                self.tree_analisis.item(item, tags=('error',))
-                else:
-                    # Partidos 1-14 - comparar signos 1/X/2
-                    signos = partido_data.get('signos', [])
-                    
-                    # Formatear mi quiniela: mostrar como 1/X, 1/X/2, o solo 1, X, 2
-                    if len(signos) == 0:
-                        mi_quiniela = '-'
-                    elif len(signos) == 1:
-                        mi_quiniela = signos[0]
-                    elif len(signos) == 2:
-                        mi_quiniela = '/'.join(sorted(signos))  # Doble: 1/X, 1/2, X/2
-                    else:
-                        mi_quiniela = '/'.join(sorted(signos))  # Triple: 1/X/2
-                    
-                    if num in resultados_dict:
-                        r = resultados_dict[num]
-                        signo_real = r.get('signo', '')
-                        
-                        if signo_real:
-                            # Formatear resultado real
-                            local = r.get('local', '')
-                            visitante = r.get('visitante', '')
-                            goles_local = r.get('goles_local')
-                            goles_visitante = r.get('goles_visitante')
-                            
-                            if goles_local is not None and goles_visitante is not None:
-                                resultado_real = f"{local} {goles_local}-{goles_visitante} {visitante} ({signo_real})"
-                            else:
-                                resultado_real = f"{local} vs {visitante} (Pendiente)"
-                            
-                            # Acierto si el signo real está en los signos seleccionados
-                            acierto = signo_real in signos if signos else False
-                            
-                            if acierto:
-                                aciertos += 1
-                            total += 1
-                            
-                            item = self.tree_analisis.insert('', 'end', values=(
-                                num,
-                                mi_quiniela,
-                                resultado_real,
-                                "✅" if acierto else "❌"
-                            ))
-                            # Marcar color: rojo para aciertos, gris para errores
-                            if acierto:
-                                self.tree_analisis.set(item, 'Acierto', '✅')
-                                self.tree_analisis.item(item, tags=('acierto',))
-                            else:
-                                self.tree_analisis.set(item, 'Acierto', '❌')
-                                self.tree_analisis.item(item, tags=('error',))
-                        else:
-                            # Sin resultado aún (pendiente)
-                            local = r.get('local', '')
-                            visitante = r.get('visitante', '')
-                            resultado_real = f"{local} vs {visitante} (Pendiente)"
-                            
-                            total += 1
-                            
-                            item = self.tree_analisis.insert('', 'end', values=(
-                                num,
-                                mi_quiniela,
-                                resultado_real,
-                                "⏳"  # Pendiente
-                            ))
-                            # Marcar como pendiente
-                            self.tree_analisis.set(item, 'Acierto', '⏳')
-                            self.tree_analisis.item(item, tags=('pendiente',))
-            
-            # Mostrar estadísticas
-            porcentaje = (aciertos / total * 100) if total > 0 else 0
-            self.stats_label.config(
-                text=f"Aciertos: {aciertos}/{total} ({porcentaje:.1f}%) | "
-                     f"Temporada: {quiniela.get('temporada', '?')} | "
-                     f"Jornada: {quiniela.get('jornada', '?')}"
-            )
-            
-            messagebox.showinfo("Comparación Completada", 
-                f"✅ Comparación realizada:\nAciertos: {aciertos}/{total}\nPorcentaje: {porcentaje:.1f}%")
-            
-        except Exception as e:
-            messagebox.showerror("Error", f"Error comparando: {e}")
-            logger.error(f"Error comparando: {e}", exc_info=True)
-    
-    def actualizar_indicador_premium(self):
-        """Actualizar el indicador de estado premium en el header"""
-        try:
-            info = self.freemium_manager.obtener_info_licencia()
-            
-            if info['es_premium']:
-                tipo = info['tipo']
-                if tipo == 'vida':
-                    texto = "⭐ Premium Vitalicio"
-                    color = COLOR_SUCCESS
-                elif tipo == 'temporada':
-                    dias = info.get('dias_restantes', 0)
-                    if dias:
-                        texto = f"⭐ Premium ({dias} días restantes)"
-                    else:
-                        texto = "⭐ Premium Temporada"
-                    color = COLOR_SUCCESS
-                elif tipo == 'semanal':
-                    dias = info.get('dias_restantes', 0)
-                    if dias:
-                        texto = f"⭐ Premium ({dias} días restantes)"
-                    else:
-                        texto = "⭐ Premium Semanal"
-                    color = COLOR_SUCCESS
-                else:
-                    texto = "⭐ Premium"
-                    color = COLOR_SUCCESS
-            else:
-                texto = "Versión Gratuita"
-                color = COLOR_WARNING
-            
-            self.premium_indicator.config(text=texto, foreground=color)
-        except Exception as e:
-            logger.error(f"Error actualizando indicador premium: {e}")
-            self.premium_indicator.config(text="Estado desconocido", foreground=COLOR_ERROR)
-    
-    def mostrar_opciones_premium(self):
-        """Mostrar diálogo de opciones premium"""
-        from src.anuncios import PremiumDialog
-        PremiumDialog(self.root, self.freemium_manager, callback=self.actualizar_indicador_premium)
-    
-    def _detectar_jornada_actual(self):
-        """Detectar automáticamente la jornada actual desde la BD"""
-        try:
-            temporada_actual = self.temporada_combo.get() if hasattr(self, 'temporada_combo') else '2025-26'
-            
-            with sqlite3.connect(DB_PATH) as conn:
-                cur = conn.cursor()
-                
-                # Buscar la jornada más reciente en jornada_actual
-                cur.execute('''
-                    SELECT MAX(jornada)
-                    FROM jornada_actual
-                    WHERE temporada = ?
-                ''', (temporada_actual,))
-                
-                result = cur.fetchone()
-                if result and result[0]:
-                    jornada_actual = result[0]
-                    # Si ya pasamos la jornada 17, usar 18 (próxima)
-                    if jornada_actual >= 17:
-                        jornada_actual = 18
-                    else:
-                        jornada_actual += 1  # Próxima jornada
-                    
-                    if hasattr(self, 'jornada_spin'):
-                        self.jornada_spin.set(jornada_actual)
-                    
-                    logger.info(f"Jornada actual detectada: {jornada_actual} (temporada {temporada_actual})")
-                else:
-                    # Si no hay datos, buscar en tablas históricas
-                    cur.execute('''
-                        SELECT MAX(jornada)
-                        FROM primera_division
-                        WHERE temporada = ?
-                    ''', (temporada_actual,))
-                    
-                    result = cur.fetchone()
-                    if result and result[0]:
-                        jornada_actual = result[0] + 1
-                        if hasattr(self, 'jornada_spin'):
-                            self.jornada_spin.set(jornada_actual)
-                        logger.info(f"Jornada detectada desde primera_division: {jornada_actual}")
-        except Exception as e:
-            logger.warning(f"No se pudo detectar jornada actual: {e}")
-            # Usar jornada 1 por defecto si hay error
-            if hasattr(self, 'jornada_spin'):
-                self.jornada_spin.set(1)
 
 
 def main():
