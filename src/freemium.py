@@ -48,10 +48,10 @@ def _aplicar_descuento_y_ajustar(precio_original: float, descuento: float) -> fl
         return (parte_entera - 1) + 0.95
 
 # Precios con descuento del 20% ajustados a .95
-PRECIO_SEMANAL = _aplicar_descuento_y_ajustar(PRECIO_SEMANAL_ORIGINAL, DESCUENTO_PORCENTAJE)  # 2.39€ (mantiene decimal normal)
+PRECIO_SEMANAL = _aplicar_descuento_y_ajustar(PRECIO_SEMANAL_ORIGINAL, DESCUENTO_PORCENTAJE)  # 2.95€
 PRECIO_TEMPORADA = _aplicar_descuento_y_ajustar(PRECIO_TEMPORADA_ORIGINAL, DESCUENTO_PORCENTAJE)  # 23.95€
 PRECIO_VIDA = _aplicar_descuento_y_ajustar(PRECIO_VIDA_ORIGINAL, DESCUENTO_PORCENTAJE)  # 39.95€
-PRECIO_BBDD_HISTORICA = _aplicar_descuento_y_ajustar(PRECIO_BBDD_HISTORICA_ORIGINAL, DESCUENTO_PORCENTAJE)  # 4.79€ (mantiene decimal normal)
+PRECIO_BBDD_HISTORICA = _aplicar_descuento_y_ajustar(PRECIO_BBDD_HISTORICA_ORIGINAL, DESCUENTO_PORCENTAJE)  # 4.95€
 
 # Email PayPal
 PAYPAL_EMAIL = "admin@1x2futbol.com"
