@@ -37,18 +37,15 @@ def _aplicar_descuento_y_ajustar(precio_original: float, descuento: float) -> fl
     parte_entera = int(precio_con_descuento)
     decimal = precio_con_descuento - parte_entera
     
-    # Si el decimal está cerca de .99 o .79, ajustar a .95
-    if decimal >= 0.75:
+    # Si el decimal está >= 0.30, mantener parte entera y poner .95
+    if decimal >= 0.30:
         return parte_entera + 0.95
-    # Si está cerca de .00 o .39, ajustar a .95 del número anterior
-    elif decimal < 0.50:
-        # Para precios muy bajos (< 1), mantener el decimal original pero ajustar
-        if parte_entera == 0:
-            return 0.95 if precio_con_descuento >= 0.50 else round(precio_con_descuento, 2)
-        return (parte_entera - 1) + 0.95
-    # Si está entre .50 y .75, redondear a .95
+    # Si está < 0.30, usar parte entera - 1 y poner .95
     else:
-        return parte_entera + 0.95
+        # Para precios muy bajos (< 1), usar 0.95 directamente
+        if parte_entera == 0:
+            return 0.95
+        return (parte_entera - 1) + 0.95
 
 # Precios con descuento del 20% ajustados a .95
 PRECIO_SEMANAL = _aplicar_descuento_y_ajustar(PRECIO_SEMANAL_ORIGINAL, DESCUENTO_PORCENTAJE)  # 2.39€ (mantiene decimal normal)
