@@ -11,7 +11,7 @@ from src.config_paypal import ADMIN_MODE
 
 logger = logging.getLogger(__name__)
 
-# Precios originales
+# Precios originales (se muestran con descuento del 20%)
 PRECIO_SEMANAL_ORIGINAL = 2.99
 PRECIO_TEMPORADA_ORIGINAL = 29.99
 PRECIO_VIDA_ORIGINAL = 49.99
@@ -20,11 +20,41 @@ PRECIO_BBDD_HISTORICA_ORIGINAL = 5.99
 # Descuento permanente del 20%
 DESCUENTO_PORCENTAJE = 0.20  # 20% de descuento
 
-# Precios con descuento
-PRECIO_SEMANAL = round(PRECIO_SEMANAL_ORIGINAL * (1 - DESCUENTO_PORCENTAJE), 2)  # 2.39€
-PRECIO_TEMPORADA = round(PRECIO_TEMPORADA_ORIGINAL * (1 - DESCUENTO_PORCENTAJE), 2)  # 23.99€
-PRECIO_VIDA = round(PRECIO_VIDA_ORIGINAL * (1 - DESCUENTO_PORCENTAJE), 2)  # 39.99€
-PRECIO_BBDD_HISTORICA = round(PRECIO_BBDD_HISTORICA_ORIGINAL * (1 - DESCUENTO_PORCENTAJE), 2)  # 4.79€
+def _aplicar_descuento_y_ajustar(precio_original: float, descuento: float) -> float:
+    """
+    Aplicar descuento del 20% y ajustar precio final para que termine en .95
+    
+    Args:
+        precio_original: Precio original
+        descuento: Porcentaje de descuento (ej: 0.20 para 20%)
+    
+    Returns:
+        Precio con descuento ajustado a .95
+    """
+    precio_con_descuento = precio_original * (1 - descuento)
+    
+    # Ajustar todos los precios para que terminen en .95
+    parte_entera = int(precio_con_descuento)
+    decimal = precio_con_descuento - parte_entera
+    
+    # Si el decimal está cerca de .99 o .79, ajustar a .95
+    if decimal >= 0.75:
+        return parte_entera + 0.95
+    # Si está cerca de .00 o .39, ajustar a .95 del número anterior
+    elif decimal < 0.50:
+        # Para precios muy bajos (< 1), mantener el decimal original pero ajustar
+        if parte_entera == 0:
+            return 0.95 if precio_con_descuento >= 0.50 else round(precio_con_descuento, 2)
+        return (parte_entera - 1) + 0.95
+    # Si está entre .50 y .75, redondear a .95
+    else:
+        return parte_entera + 0.95
+
+# Precios con descuento del 20% ajustados a .95
+PRECIO_SEMANAL = _aplicar_descuento_y_ajustar(PRECIO_SEMANAL_ORIGINAL, DESCUENTO_PORCENTAJE)  # 2.39€ (mantiene decimal normal)
+PRECIO_TEMPORADA = _aplicar_descuento_y_ajustar(PRECIO_TEMPORADA_ORIGINAL, DESCUENTO_PORCENTAJE)  # 23.95€
+PRECIO_VIDA = _aplicar_descuento_y_ajustar(PRECIO_VIDA_ORIGINAL, DESCUENTO_PORCENTAJE)  # 39.95€
+PRECIO_BBDD_HISTORICA = _aplicar_descuento_y_ajustar(PRECIO_BBDD_HISTORICA_ORIGINAL, DESCUENTO_PORCENTAJE)  # 4.79€ (mantiene decimal normal)
 
 # Email PayPal
 PAYPAL_EMAIL = "admin@1x2futbol.com"
