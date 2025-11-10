@@ -302,11 +302,12 @@ class FreemiumManager:
         }.get(tipo_licencia, "Pago Quiniela")
         
         # URL de PayPal (formato para envío de dinero)
-        # En producción, usar PayPal Buttons o API
-        url = f"https://www.paypal.com/paypalme/frubioviedma/{precio}EUR"
+        # Usar PayPal.me con el usuario del email
+        usuario_paypal = PAYPAL_EMAIL.split('@')[0]
+        url = f"https://paypal.me/{usuario_paypal}/{precio}EUR"
         
-        # Alternativa: usar PayPal.me con descripción
-        # url = f"https://paypal.me/frubioviedma/{precio}EUR?locale.x=es_ES"
+        # Alternativa: PayPal.com con email
+        # url = f"https://www.paypal.com/paypalme/{usuario_paypal}/{precio}EUR"
         
         return url
 

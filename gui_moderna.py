@@ -156,7 +156,7 @@ class QuinielaModernaApp:
         self.db = DatabaseManager(DB_PATH)
         
         # Inicializar sistema freemium
-        from src.freemium import FreemiumManager
+        from src.freemium import FreemiumManager, PRECIO_BBDD_HISTORICA
         self.freemium_manager = FreemiumManager()
         self._bbdd_prompt_mostrado = False
         self._mensaje_bbdd_historico_mostrado = False
@@ -1667,11 +1667,12 @@ class QuinielaModernaApp:
             else:
                 # Si no hay en jornada_actual, verificar si es jornada histórica
                 if not self.freemium_manager.tiene_bbdd_historica():
+                    from src.freemium import PRECIO_BBDD_HISTORICA
                     messagebox.showinfo(
                         "BBDD Histórica requerida",
                         "Para consultar jornadas pasadas necesitas la base de datos histórica.\n\n"
                         "Opción exclusiva para usuarios con BBDD histórica instalada.\n"
-                        "Descarga más de 100 años de resultados por solo 5,99€ para desbloquear todo el análisis histórico."
+                        f"Descarga más de 100 años de resultados por solo {PRECIO_BBDD_HISTORICA}€ para desbloquear todo el análisis histórico."
                     )
                     self._mostrar_dialogo_bbdd_promocion(force=True)
                     return
@@ -3775,10 +3776,11 @@ class QuinielaModernaApp:
             return
         if not (self.freemium_manager.verificar_licencia() or self.freemium_manager.tiene_bbdd_historica()):
             if not self._mensaje_bbdd_historico_mostrado:
+                from src.freemium import PRECIO_BBDD_HISTORICA
                 messagebox.showinfo(
                     "BBDD Histórica requerida",
                     "Esta opción es exclusiva para usuarios con la base de datos histórica instalada.\n\n"
-                    "Descarga más de 100 años de resultados por solo 5,99€ para desbloquear todo el análisis histórico."
+                    f"Descarga más de 100 años de resultados por solo {PRECIO_BBDD_HISTORICA}€ para desbloquear todo el análisis histórico."
                 )
                 self._mensaje_bbdd_historico_mostrado = True
                 self._mostrar_dialogo_bbdd_promocion(force=True)
@@ -3838,9 +3840,11 @@ class QuinielaModernaApp:
             justify='center'
         ).pack(pady=5)
         
+        # Obtener precio con descuento
+        from src.freemium import PRECIO_BBDD_HISTORICA, PRECIO_BBDD_HISTORICA_ORIGINAL
         ttk.Label(
             marco,
-            text="Disponible por solo 5,99€ (pago único).",
+            text=f"Disponible por solo {PRECIO_BBDD_HISTORICA}€ (antes {PRECIO_BBDD_HISTORICA_ORIGINAL}€) - Pago único",
             style='Modern.TLabel',
             font=('Segoe UI', 11, 'bold'),
             foreground=COLOR_WARNING
@@ -3849,9 +3853,11 @@ class QuinielaModernaApp:
         botones = ttk.Frame(marco)
         botones.pack(pady=15)
         
+        # Obtener precio actualizado
+        from src.freemium import PRECIO_BBDD_HISTORICA
         comprar_btn = ModernButton(
             botones,
-            "📦 Descargar BBDD 4,79€",
+            f"📦 Descargar BBDD {PRECIO_BBDD_HISTORICA}€",
             command=lambda: self._abrir_compra_bbdd(dialog),
             bg=COLOR_ACCENT,
             width=220,
