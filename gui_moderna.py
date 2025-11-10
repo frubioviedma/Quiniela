@@ -144,6 +144,10 @@ class QuinielaModernaApp:
         # Inicializar sistema freemium
         from src.freemium import FreemiumManager
         self.freemium_manager = FreemiumManager()
+        self._bbdd_prompt_mostrado = False
+        self._mensaje_bbdd_historico_mostrado = False
+        self._auto_cambio_jornada = False
+        self._auto_cambio_analisis = False
         
         # Inicializar reductor
         from src.reduccion import ReductorQuinielas
@@ -162,6 +166,9 @@ class QuinielaModernaApp:
         
         # Detectar jornada actual automáticamente
         self._detectar_jornada_actual()
+        
+        # Mostrar promoción BBDD histórica (no bloqueante)
+        self.root.after(1500, self.mostrar_promocion_bbdd_inicial)
     
     def setup_style(self):
         """Configurar estilo moderno"""
@@ -251,6 +258,7 @@ class QuinielaModernaApp:
         self.create_pronosticos_tab()
         self.create_reduccion_tab()
         self.create_analisis_tab()
+        self.create_historico_tab()
     
     def create_jornada_tab(self):
         """Pestaña de jornada actual"""
@@ -280,6 +288,8 @@ class QuinielaModernaApp:
         self.jornada_spin = ttk.Spinbox(row1, from_=1, to=70, width=10)
         self.jornada_spin.set(1)
         self.jornada_spin.pack(side='left')
+        self.jornada_spin.configure(command=self._on_cambio_jornada_principal)
+        self.jornada_spin.bind('<Return>', lambda e: self._on_cambio_jornada_principal())
         
         # División
         ttk.Label(row1, text="División:", style='Modern.TLabel').pack(side='left', padx=(30, 10))
@@ -287,6 +297,8 @@ class QuinielaModernaApp:
         self.division_combo['values'] = ['Primera', 'Segunda']
         self.division_combo.current(0)
         self.division_combo.pack(side='left')
+        self.temporada_combo.bind("<<ComboboxSelected>>", lambda e: self._on_cambio_jornada_principal())
+        self.division_combo.bind("<<ComboboxSelected>>", lambda e: self._on_cambio_jornada_principal())
         
         # Fila 2: Botones de acción
         row2 = ttk.Frame(content, style='Surface.TFrame')
@@ -693,11 +705,14 @@ class QuinielaModernaApp:
         self.analisis_temporada['values'] = ['2025-26', '2024-25', '2023-24', '2022-23', '2021-22', '2020-21']
         self.analisis_temporada.current(0)
         self.analisis_temporada.pack(side='left', padx=5)
+        self.analisis_temporada.bind("<<ComboboxSelected>>", self._on_cambio_jornada_analisis)
         
         ttk.Label(row1, text="Jornada:", style='Modern.TLabel').pack(side='left', padx=5)
         self.analisis_jornada = ttk.Spinbox(row1, from_=1, to=70, width=10)
         self.analisis_jornada.set(1)
         self.analisis_jornada.pack(side='left', padx=5)
+        self.analisis_jornada.configure(command=lambda: self._on_cambio_jornada_analisis())
+        self.analisis_jornada.bind('<Return>', lambda e: self._on_cambio_jornada_analisis())
         
         # Fila 2: Botones de acción
         row2 = ttk.Frame(header_content, style='Surface.TFrame')
@@ -719,16 +734,51 @@ class QuinielaModernaApp:
                     command=self.comparar_quiniela_resultados,
                     bg="#9333ea", width=200).pack(side='left', padx=5)
         
-        # Tabla de comparación
-        table_frame = ttk.Frame(frame, style='Surface.TFrame')
-        table_frame.pack(fill='both', expand=True, padx=20, pady=(0, 20))
+        # Contenido dividido: simulación (izquierda) y comparación (derecha)
+        content_split = ttk.Frame(frame, style='Surface.TFrame')
+        content_split.pack(fill='both', expand=True, padx=20, pady=(0, 20))
         
-        ttk.Label(table_frame, text="Comparación Quiniela vs Resultados",
+        # Panel izquierdo: Quiniela simulada
+        self.simulada_panel = ttk.Frame(content_split, style='Surface.TFrame', width=420)
+        self.simulada_panel.pack(side='left', fill='y', padx=(0, 15))
+        self.simulada_panel.pack_propagate(False)
+        
+        ttk.Label(self.simulada_panel,
+                  text="Tu Quiniela Simulada",
+                  font=('Segoe UI', 14, 'bold'),
+                  style='Modern.TLabel').pack(anchor='w', padx=10, pady=(10, 5))
+        
+        self.simulada_canvas = tk.Canvas(self.simulada_panel, bg=COLOR_SURFACE, highlightthickness=0)
+        simulada_scroll = ttk.Scrollbar(self.simulada_panel, orient='vertical', command=self.simulada_canvas.yview)
+        self.simulada_canvas.configure(yscrollcommand=simulada_scroll.set)
+        
+        self.simulada_canvas.pack(side='left', fill='both', expand=True, padx=(10, 0), pady=(0, 10))
+        simulada_scroll.pack(side='right', fill='y', pady=(0, 10))
+        
+        self.simulada_content = ttk.Frame(self.simulada_canvas, style='Surface.TFrame')
+        self.simulada_canvas.create_window((0, 0), window=self.simulada_content, anchor='nw')
+        
+        def _on_simulada_configure(event):
+            self.simulada_canvas.configure(scrollregion=self.simulada_canvas.bbox('all'))
+        self.simulada_content.bind('<Configure>', _on_simulada_configure)
+        
+        self.simulada_resumen_label = ttk.Label(
+            self.simulada_panel,
+            text="Carga una quiniela para ver la simulación.",
+            style='Modern.TLabel',
+            font=('Segoe UI', 10, 'italic')
+        )
+        self.simulada_resumen_label.pack(anchor='w', padx=10, pady=(0, 10))
+        
+        # Panel derecho: comparación detallada
+        right_panel = ttk.Frame(content_split, style='Surface.TFrame')
+        right_panel.pack(side='left', fill='both', expand=True)
+        
+        ttk.Label(right_panel, text="Comparación Quiniela vs Resultados",
                  font=('Segoe UI', 14, 'bold'),
                  style='Modern.TLabel').pack(anchor='w', pady=(0, 10))
         
-        # Treeview para mostrar comparación
-        tree_frame = ttk.Frame(table_frame, style='Surface.TFrame')
+        tree_frame = ttk.Frame(right_panel, style='Surface.TFrame')
         tree_frame.pack(fill='both', expand=True)
         
         columns = ('Partido', 'Mi Quiniela', 'Resultado Real', 'Acierto')
@@ -736,13 +786,12 @@ class QuinielaModernaApp:
         
         for col in columns:
             self.tree_analisis.heading(col, text=col)
-            width = 80 if col == 'Partido' else (200 if col == 'Mi Quiniela' else (200 if col == 'Resultado Real' else 100))
+            width = 90 if col == 'Partido' else (220 if col in ['Mi Quiniela', 'Resultado Real'] else 110)
             self.tree_analisis.column(col, width=width, anchor='center')
         
-        # Configurar tags de color
-        self.tree_analisis.tag_configure('acierto', background='#4a2a2a', foreground='#ffffff')  # Rojo oscuro para aciertos
-        self.tree_analisis.tag_configure('error', background='#2a2a2a', foreground='#ff6666')  # Gris oscuro para errores
-        self.tree_analisis.tag_configure('pendiente', background='#2a2a4a', foreground='#ffff99')  # Azul oscuro para pendientes
+        self.tree_analisis.tag_configure('acierto', background='#1f3b2a', foreground='#d1ffd6')
+        self.tree_analisis.tag_configure('error', background='#3b1f1f', foreground='#ff9c9c')
+        self.tree_analisis.tag_configure('pendiente', background='#1f283b', foreground='#ffe79c')
         
         scrollbar_analisis = ttk.Scrollbar(tree_frame, orient='vertical', command=self.tree_analisis.yview)
         self.tree_analisis.configure(yscrollcommand=scrollbar_analisis.set)
@@ -750,14 +799,16 @@ class QuinielaModernaApp:
         self.tree_analisis.pack(side='left', fill='both', expand=True)
         scrollbar_analisis.pack(side='right', fill='y')
         
-        # Estadísticas
-        stats_frame = ttk.Frame(frame, style='Surface.TFrame')
-        stats_frame.pack(fill='x', padx=20, pady=(0, 20))
+        stats_frame = ttk.Frame(right_panel, style='Surface.TFrame')
+        stats_frame.pack(fill='x', pady=(10, 0))
         
         self.stats_label = ttk.Label(stats_frame, text="",
                  font=('Segoe UI', 12, 'bold'),
                  style='Modern.TLabel')
-        self.stats_label.pack(pady=10)
+        self.stats_label.pack(pady=5)
+        
+        # Inicializar panel con mensaje por defecto
+        self.mostrar_quiniela_simulada()
         
         # Variables para almacenar datos
         self.quiniela_guardada = None
@@ -1148,6 +1199,248 @@ class QuinielaModernaApp:
         
         # Después de crear todas las filas, proponer automáticamente el resultado para el partido 15
         self._proponer_resultado_pleno_15()
+
+    def _construir_resultados_dict(self):
+        """Construir diccionario de resultados para acceso rápido por número de partido"""
+        resultados_dict = {}
+        if not self.resultados_analisis:
+            return resultados_dict
+        
+        try:
+            for res in self.resultados_analisis:
+                if isinstance(res, dict):
+                    num = res.get('partido_numero') or res.get('num') or res.get(0)
+                    if num is None:
+                        continue
+                    resultados_dict[num] = {
+                        'local': res.get('local'),
+                        'visitante': res.get('visitante'),
+                        'goles_local': res.get('goles_local'),
+                        'goles_visitante': res.get('goles_visitante'),
+                        'signo': res.get('signo'),
+                        'estado': res.get('estado', 'final')
+                    }
+                else:
+                    # Tupla: (num, local, visitante, goles_local, goles_visitante, quiniela)
+                    if len(res) < 6:
+                        continue
+                    num = res[0]
+                    resultados_dict[num] = {
+                        'local': res[1],
+                        'visitante': res[2],
+                        'goles_local': res[3],
+                        'goles_visitante': res[4],
+                        'signo': res[5],
+                        'estado': 'final' if res[3] is not None and res[4] is not None else 'pendiente'
+                    }
+        except Exception as e:
+            logger.error(f"Error construyendo resultados dict: {e}", exc_info=True)
+        return resultados_dict
+
+    def _formatear_texto_resultado(self, datos):
+        """Formatear texto descriptivo del resultado real"""
+        if not datos:
+            return "Resultado real: pendiente"
+        goles_local = datos.get('goles_local')
+        goles_visitante = datos.get('goles_visitante')
+        signo = datos.get('signo')
+        estado = datos.get('estado', 'final')
+        local = datos.get('local', '')
+        visitante = datos.get('visitante', '')
+        
+        if goles_local is None or goles_visitante is None:
+            return f"{local} vs {visitante} · Pendiente"
+        return f"{local} {goles_local}-{goles_visitante} {visitante} ({signo})"
+
+    def _pleno_signo_from_goals(self, goles: int):
+        """Convertir goles a signo de Pleno al 15"""
+        if goles is None:
+            return None
+        if goles == 0:
+            return '0'
+        if goles == 1:
+            return '1'
+        if goles == 2:
+            return '2'
+        return 'M'
+
+    def mostrar_quiniela_simulada(self, quiniela=None, resultados_dict=None, resumen=None):
+        """Renderizar visualmente la quiniela guardada para comparación"""
+        if not hasattr(self, 'simulada_content'):
+            return
+        
+        for widget in self.simulada_content.winfo_children():
+            widget.destroy()
+        
+        if quiniela is None:
+            quiniela = self.quiniela_guardada
+        
+        if resultados_dict is None:
+            resultados_dict = self._construir_resultados_dict()
+        
+        if not quiniela or not quiniela.get('partidos'):
+            ttk.Label(self.simulada_content,
+                      text="No hay quiniela cargada.\nGuarda o carga una quiniela para visualizarla aquí.",
+                      style='Modern.TLabel',
+                      font=('Segoe UI', 10),
+                      justify='center').pack(padx=10, pady=20)
+            self.simulada_resumen_label.config(text="Carga una quiniela para ver la simulación.")
+            return
+        
+        calcular_resumen = resumen is None
+        if resumen is None:
+            resumen = {'aciertos': 0, 'errores': 0, 'pendientes': 0, 'jugados': 0}
+        
+        partidos = sorted(quiniela['partidos'], key=lambda p: p.get('num', 0))
+        colores_signo = {'1': '#2a4a2a', 'X': '#4a4a2a', '2': '#4a2a2a'}
+        
+        for partido in partidos:
+            num = partido.get('num')
+            frame = tk.Frame(self.simulada_content, bg=COLOR_SURFACE,
+                             highlightthickness=1, highlightbackground='#3d3d3d')
+            frame.pack(fill='x', padx=8, pady=3)
+            
+            header = tk.Frame(frame, bg=COLOR_SURFACE)
+            header.pack(fill='x', padx=6, pady=(4, 2))
+            
+            titulo = partido.get('local', 'Equipo A')
+            oponente = partido.get('visitante', 'Equipo B')
+            tk.Label(header,
+                     text=f"{num:02d}" if num else "--",
+                     font=('Segoe UI', 11, 'bold'),
+                     bg=COLOR_SURFACE,
+                     fg=COLOR_FG,
+                     width=4).pack(side='left')
+            tk.Label(header,
+                     text=f"{titulo} vs {oponente}",
+                     font=('Segoe UI', 10),
+                     bg=COLOR_SURFACE,
+                     fg=COLOR_FG,
+                     anchor='w').pack(side='left', fill='x', expand=True)
+            
+            datos_resultado = resultados_dict.get(num)
+            
+            if num == 15:
+                self._renderizar_pleno_15(frame, partido, datos_resultado, resumen, calcular_resumen)
+            else:
+                seleccionados = partido.get('signos', [])
+                self._renderizar_partido_normal(frame, seleccionados, datos_resultado,
+                                                colores_signo, resumen, calcular_resumen)
+            
+            tk.Label(frame,
+                     text=self._formatear_texto_resultado(datos_resultado),
+                     font=('Segoe UI', 9),
+                     bg=COLOR_SURFACE,
+                     fg='#a0a0a0',
+                     anchor='w').pack(fill='x', padx=6, pady=(0, 4))
+        
+        jugados = resumen.get('jugados', 0)
+        pendientes = resumen.get('pendientes', 0)
+        aciertos = resumen.get('aciertos', 0)
+        errores = resumen.get('errores', 0)
+        if jugados:
+            porcentaje = (aciertos / jugados) * 100 if jugados else 0
+            texto = (f"Aciertos: {aciertos}/{jugados} · Errores: {errores} "
+                     f"· Pendientes: {pendientes} · Éxito: {porcentaje:.1f}%")
+        else:
+            texto = f"Pendientes: {pendientes}. Esperando resultados finales."
+        self.simulada_resumen_label.config(text=texto)
+
+    def _renderizar_partido_normal(self, frame, seleccionados, datos_resultado,
+                                   colores_signo, resumen, calcular_resumen):
+        """Renderizar fila visual para partidos 1-14"""
+        signo_real = datos_resultado.get('signo') if datos_resultado else None
+        estado_pendiente = datos_resultado and datos_resultado.get('goles_local') is None
+        
+        contenedor = tk.Frame(frame, bg=COLOR_SURFACE)
+        contenedor.pack(fill='x', padx=6, pady=(0, 4))
+        
+        for signo in ['1', 'X', '2']:
+            seleccionado = signo in seleccionados
+            bg = colores_signo.get(signo, '#363636') if seleccionado else '#2a2a2a'
+            texto = signo + (' ✓' if signo_real == signo and seleccionado else '')
+            label = tk.Label(contenedor,
+                             text=texto,
+                             font=('Segoe UI', 11, 'bold'),
+                             bg=bg,
+                             fg=COLOR_FG,
+                             width=5,
+                             padx=4,
+                             pady=4,
+                             highlightthickness=2 if signo_real == signo else 1,
+                             highlightbackground=COLOR_SUCCESS if signo_real == signo else '#4a4a4a')
+            label.pack(side='left', padx=3)
+        
+        if calcular_resumen and datos_resultado:
+            if estado_pendiente or signo_real is None:
+                resumen['pendientes'] += 1
+            else:
+                resumen['jugados'] += 1
+                if signo_real in seleccionados:
+                    resumen['aciertos'] += 1
+                else:
+                    resumen['errores'] += 1
+
+    def _renderizar_pleno_15(self, frame, partido, datos_resultado, resumen, calcular_resumen):
+        """Renderizar visual del Pleno al 15"""
+        opciones = ['0', '1', '2', 'M']
+        seleccion_local = partido.get('signo_local', '')
+        seleccion_visitante = partido.get('signo_visitante', '')
+        
+        goles_local = datos_resultado.get('goles_local') if datos_resultado else None
+        goles_visitante = datos_resultado.get('goles_visitante') if datos_resultado else None
+        signo_local_real = self._pleno_signo_from_goals(goles_local)
+        signo_visitante_real = self._pleno_signo_from_goals(goles_visitante)
+        pendientes = (goles_local is None or goles_visitante is None)
+        
+        for equipo, seleccion, signo_real, etiqueta in [
+            ('local', seleccion_local, signo_local_real, partido.get('local', 'Local')),
+            ('visitante', seleccion_visitante, signo_visitante_real, partido.get('visitante', 'Visitante'))
+        ]:
+            contenedor = tk.Frame(frame, bg=COLOR_SURFACE)
+            contenedor.pack(fill='x', padx=6, pady=(2, 4))
+            
+            tk.Label(contenedor,
+                     text=f"{equipo.capitalize()}: {etiqueta}",
+                     font=('Segoe UI', 9, 'bold'),
+                     bg=COLOR_SURFACE,
+                     fg=COLOR_FG,
+                     anchor='w').pack(anchor='w')
+            
+            opciones_frame = tk.Frame(contenedor, bg=COLOR_SURFACE)
+            opciones_frame.pack(anchor='w', pady=(2, 0))
+            
+            for opcion in opciones:
+                seleccionado = seleccion == opcion
+                bg = '#2a2a4a'
+                if opcion == '1':
+                    bg = '#2a4a2a'
+                elif opcion == '2':
+                    bg = '#4a2a2a'
+                texto = opcion + (' ✓' if signo_real == opcion and seleccionado else '')
+                label = tk.Label(opciones_frame,
+                                 text=texto,
+                                 font=('Segoe UI', 10, 'bold'),
+                                 bg=bg if seleccionado else '#2a2a2a',
+                                 fg=COLOR_FG,
+                                 width=4,
+                                 padx=3,
+                                 pady=3,
+                                 highlightthickness=2 if signo_real == opcion else 1,
+                                 highlightbackground=COLOR_SUCCESS if signo_real == opcion else '#4a4a4a')
+                label.pack(side='left', padx=2)
+        
+        if calcular_resumen:
+            if pendientes or signo_local_real is None or signo_visitante_real is None:
+                resumen['pendientes'] += 1
+            else:
+                resumen['jugados'] += 1
+                aciertos_local = seleccion_local == signo_local_real
+                aciertos_visitante = seleccion_visitante == signo_visitante_real
+                if aciertos_local and aciertos_visitante:
+                    resumen['aciertos'] += 1
+                else:
+                    resumen['errores'] += 1
     
     def crear_fila_quiniela(self, num, partido):
         """Crear una fila de quiniela con checkboxes y porcentajes"""
@@ -2177,6 +2470,7 @@ class QuinielaModernaApp:
                     dialog.destroy()
                     messagebox.showinfo("Éxito", 
                         f"✅ Quiniela cargada:\nTemporada: {self.quiniela_guardada.get('temporada')}\nJornada: {self.quiniela_guardada.get('jornada')}")
+                    self.mostrar_quiniela_simulada(self.quiniela_guardada)
                 else:
                     messagebox.showwarning("Advertencia", "Selecciona una quiniela")
             
@@ -2205,7 +2499,7 @@ class QuinielaModernaApp:
             self.freemium_manager
         )
     
-    def _cargar_resultados_analisis_real(self):
+    def _cargar_resultados_analisis_real(self, auto: bool = False):
         """Método real que carga los resultados"""
         try:
             temporada = self.analisis_temporada.get()
@@ -2450,14 +2744,18 @@ class QuinielaModernaApp:
                 
                 if resultados:
                     self.resultados_analisis = resultados
-                    messagebox.showinfo("Éxito", 
-                        f"✅ Resultados cargados:\n{len(resultados)} partidos encontrados (de 15 esperados)")
+                    if not auto:
+                        messagebox.showinfo("Éxito", 
+                            f"✅ Resultados cargados:\n{len(resultados)} partidos encontrados (de 15 esperados)")
                 else:
-                    messagebox.showwarning("Advertencia", 
-                        "No se encontraron resultados. La jornada puede no haber finalizado aún.")
+                    if not auto:
+                        messagebox.showwarning("Advertencia", 
+                            "No se encontraron resultados. La jornada puede no haber finalizado aún.")
+                self.mostrar_quiniela_simulada(self.quiniela_guardada)
                     
         except Exception as e:
-            messagebox.showerror("Error", f"Error cargando resultados: {e}")
+            if not auto:
+                messagebox.showerror("Error", f"Error cargando resultados: {e}")
             logger.error(f"Error cargando resultados: {e}", exc_info=True)
     
     def comparar_quiniela_resultados(self):
@@ -2488,7 +2786,9 @@ class QuinielaModernaApp:
             quiniela = self.quiniela_guardada
             resultados = self.resultados_analisis
             aciertos = 0
-            total = 0
+            errores = 0
+            jugados = 0
+            pendientes = 0
             
             # Crear diccionario de resultados por número de partido
             resultados_dict = {}
@@ -2537,7 +2837,9 @@ class QuinielaModernaApp:
                             
                             if acierto:
                                 aciertos += 1
-                            total += 1
+                            else:
+                                errores += 1
+                            jugados += 1
                             
                             item = self.tree_analisis.insert('', 'end', values=(
                                 f"P-{num}",
@@ -2552,6 +2854,20 @@ class QuinielaModernaApp:
                             else:
                                 self.tree_analisis.set(item, 'Acierto', '❌')
                                 self.tree_analisis.item(item, tags=('error',))
+                        else:
+                            pendientes += 1
+                            resultado_real = f"{r.get('local', '')} vs {r.get('visitante', '')} (Pendiente)"
+                            mi_quiniela = f"{signo_local}-{signo_visitante}"
+                            item = self.tree_analisis.insert('', 'end', values=(
+                                f"P-{num}",
+                                mi_quiniela,
+                                resultado_real,
+                                "⏳"
+                            ))
+                            self.tree_analisis.set(item, 'Acierto', '⏳')
+                            self.tree_analisis.item(item, tags=('pendiente',))
+                    else:
+                        pendientes += 1
                 else:
                     # Partidos 1-14 - comparar signos 1/X/2
                     signos = partido_data.get('signos', [])
@@ -2587,7 +2903,9 @@ class QuinielaModernaApp:
                             
                             if acierto:
                                 aciertos += 1
-                            total += 1
+                            else:
+                                errores += 1
+                            jugados += 1
                             
                             item = self.tree_analisis.insert('', 'end', values=(
                                 num,
@@ -2608,7 +2926,7 @@ class QuinielaModernaApp:
                             visitante = r.get('visitante', '')
                             resultado_real = f"{local} vs {visitante} (Pendiente)"
                             
-                            total += 1
+                            pendientes += 1
                             
                             item = self.tree_analisis.insert('', 'end', values=(
                                 num,
@@ -2621,15 +2939,27 @@ class QuinielaModernaApp:
                             self.tree_analisis.item(item, tags=('pendiente',))
             
             # Mostrar estadísticas
-            porcentaje = (aciertos / total * 100) if total > 0 else 0
+            resumen = {
+                'aciertos': aciertos,
+                'errores': errores,
+                'jugados': jugados,
+                'pendientes': pendientes
+            }
+            self.mostrar_quiniela_simulada(quiniela, resultados_dict, resumen)
+            
+            porcentaje = (aciertos / jugados * 100) if jugados > 0 else 0
             self.stats_label.config(
-                text=f"Aciertos: {aciertos}/{total} ({porcentaje:.1f}%) | "
+                text=f"Aciertos: {aciertos}/{jugados} ({porcentaje:.1f}%) · "
+                     f"Errores: {errores} · Pendientes: {pendientes} | "
                      f"Temporada: {quiniela.get('temporada', '?')} | "
                      f"Jornada: {quiniela.get('jornada', '?')}"
             )
             
             messagebox.showinfo("Comparación Completada", 
-                f"✅ Comparación realizada:\nAciertos: {aciertos}/{total}\nPorcentaje: {porcentaje:.1f}%")
+                f"✅ Comparación realizada:\n"
+                f"Aciertos: {aciertos}/{jugados} ({porcentaje:.1f}%)\n"
+                f"Errores: {errores}\n"
+                f"Pendientes: {pendientes}")
             
         except Exception as e:
             messagebox.showerror("Error", f"Error comparando: {e}")
@@ -2724,6 +3054,127 @@ class QuinielaModernaApp:
             if hasattr(self, 'jornada_spin'):
                 self.jornada_spin.set(1)
 
+    def _on_cambio_jornada_principal(self):
+        """Actualizar partidos al cambiar temporada/jornada en pestaña principal"""
+        if self._auto_cambio_jornada:
+            return
+        try:
+            self._auto_cambio_jornada = True
+            self.cargar_jornada()
+        finally:
+            self._auto_cambio_jornada = False
+
+    def _on_cambio_jornada_analisis(self, event=None):
+        """Auto cargar resultados al cambiar selección en pestaña análisis"""
+        if self._auto_cambio_analisis:
+            return
+        if not (self.freemium_manager.verificar_licencia() or self.freemium_manager.tiene_bbdd_historica()):
+            if not self._mensaje_bbdd_historico_mostrado:
+                messagebox.showinfo(
+                    "BBDD Histórica requerida",
+                    "Esta opción es exclusiva para usuarios con la base de datos histórica instalada.\n\n"
+                    "Descarga más de 100 años de resultados por solo 5,99€ para desbloquear todo el análisis histórico."
+                )
+                self._mensaje_bbdd_historico_mostrado = True
+                self._mostrar_dialogo_bbdd_promocion(force=True)
+            return
+        try:
+            self._auto_cambio_analisis = True
+            self._cargar_resultados_analisis_real(auto=True)
+        finally:
+            self._auto_cambio_analisis = False
+
+    def mostrar_promocion_bbdd_inicial(self):
+        """Mostrar recordatorio para descargar la BBDD histórica"""
+        if self._bbdd_prompt_mostrado:
+            return
+        if self.freemium_manager.tiene_bbdd_historica():
+            return
+        self._mostrar_dialogo_bbdd_promocion()
+
+    def _mostrar_dialogo_bbdd_promocion(self, force: bool = False):
+        """Mostrar diálogo promocional de la BBDD histórica"""
+        if self.freemium_manager.tiene_bbdd_historica():
+            return
+        if self._bbdd_prompt_mostrado and not force:
+            return
+        self._bbdd_prompt_mostrado = True
+        
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Base de Datos Histórica")
+        dialog.geometry("480x280")
+        dialog.resizable(False, False)
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        center_x = (dialog.winfo_screenwidth() // 2) - 240
+        center_y = (dialog.winfo_screenheight() // 2) - 140
+        dialog.geometry(f"480x280+{center_x}+{center_y}")
+        
+        marco = ttk.Frame(dialog, padding=20)
+        marco.pack(fill='both', expand=True)
+        
+        ttk.Label(
+            marco,
+            text="🔥 Consigue la BBDD Histórica (1920-Actualidad)",
+            style='Modern.TLabel',
+            font=('Segoe UI', 14, 'bold')
+        ).pack(pady=(0, 10))
+        
+        mensaje = (
+            "Analiza más de 100 años de resultados de la liga española.\n"
+            "Descubre patrones reales, compara jornadas antiguas y genera pronósticos más potentes."
+        )
+        ttk.Label(
+            marco,
+            text=mensaje,
+            style='Modern.TLabel',
+            font=('Segoe UI', 10),
+            justify='center'
+        ).pack(pady=5)
+        
+        ttk.Label(
+            marco,
+            text="Disponible por solo 5,99€ (pago único).",
+            style='Modern.TLabel',
+            font=('Segoe UI', 11, 'bold'),
+            foreground=COLOR_WARNING
+        ).pack(pady=10)
+        
+        botones = ttk.Frame(marco)
+        botones.pack(pady=15)
+        
+        comprar_btn = ModernButton(
+            botones,
+            "📦 Descargar BBDD 5,99€",
+            command=lambda: self._abrir_compra_bbdd(dialog),
+            bg=COLOR_ACCENT,
+            width=220,
+            height=40
+        )
+        comprar_btn.pack(side='left', padx=5)
+        
+        ModernButton(
+            botones,
+            "👉 Quizá más tarde",
+            command=dialog.destroy,
+            bg=COLOR_SURFACE,
+            width=180,
+            height=40
+        ).pack(side='left', padx=5)
+
+    def _abrir_compra_bbdd(self, dialog=None):
+        """Abrir opciones de compra de BBDD histórica"""
+        if dialog:
+            dialog.destroy()
+        from src.anuncios import PremiumDialog
+        PremiumDialog(self.root, self.freemium_manager, callback=self._on_bbdd_actualizada)
+
+    def _on_bbdd_actualizada(self):
+        """Refrescar UI tras activar BBDD histórica"""
+        self.actualizar_indicador_premium()
+        self.actualizar_estado_historico_tab()
+        self.mostrar_quiniela_simulada(self.quiniela_guardada)
 
 def main():
     root = tk.Tk()

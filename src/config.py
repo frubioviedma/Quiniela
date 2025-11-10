@@ -1,5 +1,6 @@
 """Configuración centralizada de la aplicación de Quiniela"""
 from pathlib import Path
+import os
 
 # Directorios
 BASE_DIR = Path(__file__).parent.parent
@@ -10,6 +11,9 @@ DB_PATH = BASE_DIR / "historical.db"
 # Crear directorios si no existen
 DATA_DIR.mkdir(exist_ok=True)
 CACHE_DIR.mkdir(exist_ok=True)
+
+# Modo desarrollo (para pruebas sin bloqueos)
+DEV_MODE = os.getenv("QUINIELA_DEV_MODE", "1").lower() in ("1", "true", "yes", "si", "on")
 
 # Configuración de scraping
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"

@@ -5,7 +5,18 @@ import logging
 from typing import Callable, Optional
 import webbrowser
 
-from src.freemium import FreemiumManager, PRECIO_SEMANAL, PRECIO_TEMPORADA, PRECIO_VIDA, PRECIO_BBDD_HISTORICA, PAYPAL_EMAIL
+from src.freemium import (
+    FreemiumManager,
+    PRECIO_SEMANAL,
+    PRECIO_TEMPORADA,
+    PRECIO_VIDA,
+    PRECIO_BBDD_HISTORICA,
+    PAYPAL_EMAIL,
+    LICENCIA_SEMANAL,
+    LICENCIA_TEMPORADA,
+    LICENCIA_VIDA,
+    LICENCIA_BBDD,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -260,6 +271,56 @@ class PremiumDialog:
         )
         info_text.pack()
         
+        # Herramientas de modo desarrollo
+        if self.freemium_manager.esta_en_modo_desarrollo():
+            dev_frame = ttk.LabelFrame(main_frame, text="Modo desarrollo (simulaciones)", padding=10)
+            dev_frame.pack(fill=tk.X, pady=10)
+
+            ttk.Label(
+                dev_frame,
+                text="Simula compras para probar el flujo sin realizar pagos reales.",
+                font=('Segoe UI', 9),
+                justify=tk.CENTER
+            ).pack(pady=5)
+
+            botones_dev = ttk.Frame(dev_frame)
+            botones_dev.pack(pady=5)
+
+            ttk.Button(
+                botones_dev,
+                text="Simular Semanal",
+                command=lambda: self._simular_pago_dev(LICENCIA_SEMANAL),
+                width=18
+            ).pack(side=tk.LEFT, padx=3)
+
+            ttk.Button(
+                botones_dev,
+                text="Simular Temporada",
+                command=lambda: self._simular_pago_dev(LICENCIA_TEMPORADA),
+                width=18
+            ).pack(side=tk.LEFT, padx=3)
+
+            ttk.Button(
+                botones_dev,
+                text="Simular Vitalicia",
+                command=lambda: self._simular_pago_dev(LICENCIA_VIDA),
+                width=18
+            ).pack(side=tk.LEFT, padx=3)
+
+            ttk.Button(
+                dev_frame,
+                text="Simular compra BBDD histórica",
+                command=lambda: self._simular_pago_dev(LICENCIA_BBDD),
+                width=28
+            ).pack(pady=5)
+
+            ttk.Button(
+                dev_frame,
+                text="Alternar modo desarrollo",
+                command=self._toggle_dev_mode,
+                width=28
+            ).pack(pady=(5, 0))
+
         # Botón cerrar
         btn_cerrar = ttk.Button(
             main_frame,
@@ -348,6 +409,25 @@ class PremiumDialog:
             "bbdd_historica": PRECIO_BBDD_HISTORICA
         }
         return precios.get(tipo, 0)
+
+    def _simular_pago_dev(self, tipo_licencia: str):
+        """Simular pago en modo desarrollo"""
+        self.freemium_manager.simular_pago(tipo_licencia)
+        mensaje = "Simulación completada. Licencia aplicada (solo modo desarrollo)."
+        if tipo_licencia == LICENCIA_BBDD:
+            mensaje = "Simulación completada. BBDD histórica activada (modo desarrollo)."
+        messagebox.showinfo("Simulación de pago", mensaje)
+        if self.callback:
+            self.callback()
+
+    def _toggle_dev_mode(self):
+        """Activar o desactivar modo desarrollo"""
+        nuevo_estado = not self.freemium_manager.esta_en_modo_desarrollo()
+        self.freemium_manager.configurar_modo_desarrollo(nuevo_estado)
+        estado_texto = "activado" if nuevo_estado else "desactivado"
+        messagebox.showinfo("Modo desarrollo", f"Modo desarrollo {estado_texto}. Reinicia la app para aplicar totalmente el cambio.")
+        if self.callback:
+            self.callback()
 
 
 def verificar_acceso_premium(parent, paso: str, callback: Callable, 
