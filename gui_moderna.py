@@ -901,7 +901,17 @@ class QuinielaModernaApp:
             messagebox.showerror("Error", f"Error cargando: {e}")
     
     def actualizar_web(self):
-        """Actualizar desde web (scraping)"""
+        """Actualizar desde web (scraping) con control freemium"""
+        from src.anuncios import verificar_acceso_premium
+        verificar_acceso_premium(
+            self.root,
+            "actualizar_desde_web",
+            self._actualizar_web_real,
+            self.freemium_manager
+        )
+    
+    def _actualizar_web_real(self):
+        """Método real que actualiza desde web (scraping)"""
         temporada = self.temporada_combo.get()
         jornada = int(self.jornada_spin.get())
         division_str = self.division_combo.get()
@@ -942,7 +952,17 @@ class QuinielaModernaApp:
         threading.Thread(target=actualizar_thread, daemon=True).start()
     
     def calcular_pronosticos(self):
-        """Calcular probabilidades (1, X, 2) para cada partido"""
+        """Calcular probabilidades (1, X, 2) para cada partido (control freemium)"""
+        from src.anuncios import verificar_acceso_premium
+        verificar_acceso_premium(
+            self.root,
+            "calcular_probabilidades",
+            self._calcular_pronosticos_real,
+            self.freemium_manager
+        )
+    
+    def _calcular_pronosticos_real(self):
+        """Método real que calcula probabilidades (1, X, 2) para cada partido"""
         # Verificar que hay partidos cargados
         items = self.tree.get_children()
         if not items:
@@ -1401,7 +1421,17 @@ class QuinielaModernaApp:
                 partido[f'prob_{equipo}_M'] = 20.0
     
     def rellenar_quiniela_automatica(self):
-        """Rellenar quiniela automáticamente según dobles y triples"""
+        """Rellenar quiniela automáticamente según dobles y triples (control freemium)"""
+        from src.anuncios import verificar_acceso_premium
+        verificar_acceso_premium(
+            self.root,
+            "rellenar_automatico",
+            self._rellenar_quiniela_automatica_real,
+            self.freemium_manager
+        )
+    
+    def _rellenar_quiniela_automatica_real(self):
+        """Método real que rellena automáticamente según dobles y triples"""
         if not self.quiniela_partidos:
             messagebox.showwarning("Advertencia", "Primero carga la quiniela desde 'Jornada Actual'")
             return
