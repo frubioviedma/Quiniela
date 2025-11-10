@@ -10,7 +10,7 @@
 - Nombre: Fernando Manuel Rubio
 - Profesión: Ingeniero de Sistemas
 - NIF: 75108544C
-- Email: frubioviedma@gmail.com
+- Email: admin@1x2futbol.com
 
 **Aplicación:**
 - Nombre: La quiniela 1X2
@@ -119,7 +119,7 @@ Estos términos se rigen por la legislación española. Cualquier disputa será 
 ## 13. CONTACTO
 
 Para consultas sobre estos términos:
-- Email: frubioviedma@gmail.com
+- Email: admin@1x2futbol.com
 - Propietario: Fernando Manuel Rubio
 - NIF: 75108544C
 

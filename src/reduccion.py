@@ -410,7 +410,7 @@ class ReductorQuinielas:
             if self._validar_combinacion(comb_str, filtros):
                 filtradas.append(comb)
         
-        logger.info(f"Filtros aplicados: {total_combinaciones} → {len(filtradas)} combinaciones "
+        logger.info(f"Filtros aplicados: {total_combinaciones} -> {len(filtradas)} combinaciones "
                    f"({len(filtradas)/total_combinaciones*100:.1f}% pasaron los filtros)")
         
         return filtradas
@@ -913,7 +913,7 @@ class ReductorQuinielas:
                 else:
                     break
         
-        logger.info(f"Reducción: {len(combinaciones)} → {len(reducidas)} combinaciones (objetivo: {objetivo})")
+        logger.info(f"Reduccion: {len(combinaciones)} -> {len(reducidas)} combinaciones (objetivo: {objetivo})")
         return reducidas
     
     def _calcular_score_cobertura(self, comb: List[int], seleccionadas: List[List[int]], objetivo: int) -> float:

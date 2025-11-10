@@ -92,9 +92,9 @@ PEGI 3
 
 ## Política de Privacidad
 
-URL: https://tudominio.com/privacidad
+URL: https://1x2futbol.com/privacidad
 
 ## Términos de Servicio
 
-URL: https://tudominio.com/terminos
+URL: https://1x2futbol.com/terminos
 

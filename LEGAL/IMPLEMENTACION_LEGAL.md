@@ -20,7 +20,7 @@ def mostrar_dialogo_terminos(self):
     
     Propietario: Fernando Manuel Rubio
     NIF: 75108544C
-    Email: frubioviedma@gmail.com
+    Email: admin@1x2futbol.com
     """
     
     # Botones: Aceptar / Ver términos completos

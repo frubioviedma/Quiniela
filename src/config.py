@@ -33,9 +33,11 @@ PESO_CUOTAS = 0.4     # Peso de cuotas de casas de apuestas
 PESO_FORMA = 0.2      # Peso de forma reciente
 
 # API Keys (configurar según necesidad)
+# IMPORTANTE: Usar variables de entorno en producción
+# Ejemplo: export QUINIELA_API_FOOTBALL_KEY=tu_key_aqui
 API_KEYS = {
-    'odds_api': '',  # API key de The Odds API
-    'api_football': '',  # API key de API-Football
+    'odds_api': os.getenv('QUINIELA_ODDS_API_KEY', ''),  # API key de The Odds API
+    'api_football': os.getenv('QUINIELA_API_FOOTBALL_KEY', ''),  # API key de API-Football
 }
 
 # Precios quiniela

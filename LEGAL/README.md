@@ -6,7 +6,7 @@
 - Nombre: Fernando Manuel Rubio
 - Profesión: Ingeniero de Sistemas
 - NIF: 75108544C
-- Email: frubioviedma@gmail.com
+- Email: admin@1x2futbol.com
 
 ## Documentos Incluidos
 
@@ -152,7 +152,7 @@ Los documentos deben actualizarse cuando:
 ## Contacto Legal
 
 Para consultas legales:
-- Email: frubioviedma@gmail.com
+- Email: admin@1x2futbol.com
 - Propietario: Fernando Manuel Rubio
 - NIF: 75108544C
 

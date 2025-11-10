@@ -9,7 +9,7 @@ from pathlib import Path
 # IMPORTANTE: Configura tus credenciales de PayPal aquí
 
 # Email de PayPal (ya configurado)
-PAYPAL_EMAIL = "frubioviedma@gmail.com"
+PAYPAL_EMAIL = "admin@1x2futbol.com"
 
 # PayPal Client ID (obtener desde https://developer.paypal.com/)
 # Para producción, usar credenciales de producción
@@ -74,5 +74,5 @@ APP_ADS_TXT_CONTENT = """google.com, pub-1991167012133291, DIRECT, f08c47fec0942
 ADMIN_MODE = os.getenv("QUINIELA_ADMIN_MODE", "0").lower() in ("1", "true", "yes", "si", "on")
 
 # Email del admin (para verificación adicional si es necesario)
-ADMIN_EMAIL = "frubioviedma@gmail.com"
+ADMIN_EMAIL = "admin@1x2futbol.com"
 

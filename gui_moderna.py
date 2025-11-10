@@ -1210,6 +1210,34 @@ class QuinielaModernaApp:
                  style='Modern.TLabel')
         self.stats_label.pack(pady=5)
         
+        # Frame de donación (se mostrará cuando haya aciertos)
+        self.donacion_frame = ttk.Frame(stats_frame, style='Surface.TFrame')
+        
+        # Mensaje motivador
+        self.donacion_label = tk.Label(
+            self.donacion_frame,
+            text="",
+            font=('Segoe UI', 10),
+            bg=COLOR_SURFACE,
+            fg=COLOR_FG,
+            wraplength=600,
+            justify=tk.CENTER
+        )
+        self.donacion_label.pack(pady=(0, 10))
+        
+        # Botón de donación
+        self.btn_donacion = ModernButton(
+            self.donacion_frame,
+            "💝 Hacer Donación PayPal",
+            command=self._abrir_donacion_paypal,
+            bg=COLOR_SUCCESS,
+            width=250
+        )
+        self.btn_donacion.pack()
+        
+        # Ocultar por defecto
+        self.donacion_frame.pack_forget()
+        
         # Inicializar panel con mensaje por defecto
         self.mostrar_quiniela_simulada()
         
@@ -3545,6 +3573,12 @@ class QuinielaModernaApp:
                      f"Jornada: {quiniela.get('jornada', '?')}"
             )
             
+            # Mostrar botón de donación si hay aciertos
+            if aciertos > 0:
+                self._mostrar_boton_donacion(aciertos, porcentaje)
+            else:
+                self.donacion_frame.pack_forget()
+            
             messagebox.showinfo("Comparación Completada", 
                 f"✅ Comparación realizada:\n"
                 f"Aciertos: {aciertos}/{jugados} ({porcentaje:.1f}%)\n"
@@ -3554,6 +3588,71 @@ class QuinielaModernaApp:
         except Exception as e:
             messagebox.showerror("Error", f"Error comparando: {e}")
             logger.error(f"Error comparando: {e}", exc_info=True)
+    
+    def _mostrar_boton_donacion(self, aciertos: int, porcentaje: float):
+        """
+        Mostrar botón de donación cuando hay aciertos
+        
+        Args:
+            aciertos: Número de aciertos
+            porcentaje: Porcentaje de aciertos
+        """
+        # Mensajes motivadores según el número de aciertos
+        if aciertos >= 10:
+            mensaje = (
+                f"¡Excelente! Has acertado {aciertos} partidos ({porcentaje:.1f}%)!\n\n"
+                f"¿Has ganado gracias a La quiniela 1X2?\n"
+                f"¡Ayúdanos con una donación para seguir mejorando y ayudándote a ganar más premios!"
+            )
+        elif aciertos >= 7:
+            mensaje = (
+                f"¡Buen trabajo! Has acertado {aciertos} partidos ({porcentaje:.1f}%)!\n\n"
+                f"¿Te está ayudando La quiniela 1X2?\n"
+                f"¡Apóyanos con una donación para seguir desarrollando herramientas que te ayuden a ganar!"
+            )
+        else:
+            mensaje = (
+                f"Has acertado {aciertos} partidos ({porcentaje:.1f}%)!\n\n"
+                f"¿Quieres seguir mejorando tus resultados?\n"
+                f"¡Ayúdanos con una donación para seguir mejorando La quiniela 1X2!"
+            )
+        
+        self.donacion_label.config(text=mensaje)
+        self.donacion_frame.pack(pady=10, padx=10, fill='x')
+    
+    def _abrir_donacion_paypal(self):
+        """Abrir enlace de donación PayPal"""
+        import webbrowser
+        from src.freemium import PAYPAL_EMAIL
+        
+        # Usar PayPal.me para donaciones (más simple y flexible)
+        # El formato es: https://paypal.me/USUARIO
+        # Extraer usuario del email (parte antes de @)
+        usuario_paypal = PAYPAL_EMAIL.split('@')[0]
+        url_paypalme = f"https://paypal.me/{usuario_paypal}"
+        
+        try:
+            # Abrir PayPal.me en el navegador
+            webbrowser.open(url_paypalme)
+            logger.info(f"Abriendo donación PayPal: {url_paypalme}")
+            
+            # Mostrar mensaje informativo
+            messagebox.showinfo(
+                "Donación PayPal",
+                f"Se abrirá PayPal en tu navegador.\n\n"
+                f"Email para donación: {PAYPAL_EMAIL}\n\n"
+                f"¡Gracias por tu apoyo!\n"
+                f"Tu donación nos ayuda a seguir mejorando La quiniela 1X2."
+            )
+        except Exception as e:
+            logger.error(f"Error abriendo PayPal: {e}")
+            messagebox.showinfo(
+                "Donación PayPal",
+                f"Email para donación: {PAYPAL_EMAIL}\n\n"
+                f"Puedes hacer una donación directamente desde PayPal usando este email.\n\n"
+                f"Visita: https://paypal.me/{usuario_paypal}\n\n"
+                f"¡Gracias por tu apoyo!"
+            )
     
     def actualizar_indicador_premium(self):
         """Actualizar el indicador de estado premium en el header"""
@@ -3812,6 +3911,22 @@ class QuinielaModernaApp:
 def main():
     try:
         root = tk.Tk()
+        root.withdraw()  # Ocultar ventana principal temporalmente
+        
+        # Mostrar banner de consentimientos antes de iniciar
+        from src.consent_banner import ConsentBanner
+        consent_banner = ConsentBanner()
+        
+        if not consent_banner.ya_ha_consentido():
+            # Mostrar banner
+            if not consent_banner.mostrar_banner(root):
+                # Usuario canceló, salir
+                logger.info("Usuario canceló los consentimientos. Cerrando aplicación.")
+                root.destroy()
+                sys.exit(0)
+        
+        # Si llegamos aquí, consentimientos aceptados
+        root.deiconify()  # Mostrar ventana principal
         app = QuinielaModernaApp(root)
         logger.info("Aplicación iniciada correctamente. Mostrando ventana principal...")
         root.mainloop()

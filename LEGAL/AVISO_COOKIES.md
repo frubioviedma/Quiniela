@@ -66,7 +66,7 @@ Para más información sobre cookies:
 ## 7. CONTACTO
 
 Para consultas sobre cookies:
-- Email: frubioviedma@gmail.com
+- Email: admin@1x2futbol.com
 - Responsable: Fernando Manuel Rubio
 - NIF: 75108544C
 

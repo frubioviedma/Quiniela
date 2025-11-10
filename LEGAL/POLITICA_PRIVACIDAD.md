@@ -10,7 +10,7 @@
 - Nombre: Fernando Manuel Rubio
 - Profesión: Ingeniero de Sistemas
 - NIF: 75108544C
-- Email: frubioviedma@gmail.com
+- Email: admin@1x2futbol.com
 
 **Aplicación:**
 - Nombre: La quiniela 1X2
@@ -86,7 +86,7 @@ Usted tiene derecho a:
 - **Portabilidad**: Recibir sus datos en formato estructurado
 - **Limitación**: Limitar el tratamiento en ciertos casos
 
-Para ejercer estos derechos, contacte: frubioviedma@gmail.com
+Para ejercer estos derechos, contacte: admin@1x2futbol.com
 
 ## 9. RETENCIÓN DE DATOS
 
@@ -121,7 +121,7 @@ Podemos actualizar esta política. Las modificaciones se notificarán:
 ## 14. CONTACTO
 
 Para consultas sobre privacidad:
-- Email: frubioviedma@gmail.com
+- Email: admin@1x2futbol.com
 - Responsable: Fernando Manuel Rubio
 - NIF: 75108544C
 

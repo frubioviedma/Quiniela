@@ -12,7 +12,7 @@ En cumplimiento del artículo 10 de la Ley 34/2002, de 11 de julio, de Servicios
 - Nombre: Fernando Manuel Rubio
 - Profesión: Ingeniero de Sistemas
 - NIF: 75108544C
-- Email: frubioviedma@gmail.com
+- Email: admin@1x2futbol.com
 
 **Aplicación:**
 - Nombre: La quiniela 1X2
@@ -70,7 +70,7 @@ Este aviso legal se rige por la legislación española. Para cualquier controver
 ## 9. CONTACTO
 
 Para cualquier consulta sobre este aviso legal:
-- Email: frubioviedma@gmail.com
+- Email: admin@1x2futbol.com
 - Titular: Fernando Manuel Rubio
 - NIF: 75108544C
 

@@ -12,7 +12,7 @@
 - **Nombre**: Fernando Manuel Rubio
 - **Profesión**: Ingeniero de Sistemas
 - **NIF**: 75108544C
-- **Email**: frubioviedma@gmail.com
+- **Email**: admin@1x2futbol.com
 
 ## Aplicación
 

@@ -27,7 +27,7 @@ PRECIO_VIDA = round(PRECIO_VIDA_ORIGINAL * (1 - DESCUENTO_PORCENTAJE), 2)  # 39.
 PRECIO_BBDD_HISTORICA = round(PRECIO_BBDD_HISTORICA_ORIGINAL * (1 - DESCUENTO_PORCENTAJE), 2)  # 4.79€
 
 # Email PayPal
-PAYPAL_EMAIL = "frubioviedma@gmail.com"
+PAYPAL_EMAIL = "admin@1x2futbol.com"
 
 # Tipos de licencia
 LICENCIA_GRATIS = "gratis"
