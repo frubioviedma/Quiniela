@@ -13,79 +13,193 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.scrollview import ScrollView
+from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
 from kivy.uix.gridlayout import GridLayout
 from kivy.core.window import Window
+from kivy.metrics import dp
 
 from src.freemium import FreemiumManager
 from src.database import DatabaseManager
 from src.config import DB_PATH
 
 
-class QuinielaMobile(BoxLayout):
-    def __init__(self, **kwargs):
-        super().__init__(orientation="vertical", **kwargs)
-
+class QuinielaState:
+    """Estado compartido para la app móvil."""
+    def __init__(self):
         self.fm = FreemiumManager()
         self.db = DatabaseManager(DB_PATH)
 
-        self.header = Label(text="Quiniela Pro (APK DEV)", size_hint_y=None, height=48)
-        self.add_widget(self.header)
 
-        actions = GridLayout(cols=2, size_hint_y=None, height=160, padding=6, spacing=6)
-        self.btn_info = Button(text="Estado freemium", on_release=self._mostrar_estado)
-        self.btn_mock = Button(text="Simular pago temporada", on_release=self._simular_temporada)
-        self.btn_flow = Button(text="Probar flujo (mock)", on_release=self._probar_flujo)
-        self.btn_db = Button(text="Comprobar BD local", on_release=self._comprobar_bd)
-        actions.add_widget(self.btn_info)
-        actions.add_widget(self.btn_mock)
-        actions.add_widget(self.btn_flow)
-        actions.add_widget(self.btn_db)
-        self.add_widget(actions)
+class BaseScreen(Screen):
+    """Pantalla base con utilidades comunes."""
+    def append_log(self, message: str):
+        App.get_running_app().root.append_log(message)
 
-        self.out = Label(text="Listo.", size_hint_y=None, height=1200)
-        sv = ScrollView()
-        sv.add_widget(self.out)
-        self.add_widget(sv)
+    @property
+    def state(self) -> QuinielaState:
+        return App.get_running_app().state
 
-    def _mostrar_estado(self, *args):
-        info = self.fm.obtener_info_licencia()
-        txt = [
+
+class MenuScreen(BaseScreen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        layout = BoxLayout(orientation='vertical', padding=dp(20), spacing=dp(12))
+        layout.add_widget(Label(
+            text="Bienvenido a Quiniela Pro\n\nEsta versión APK está en modo desarrollo (mock). "
+                 "Usa los botones para probar el estado del sistema freemium y validar el flujo.",
+            size_hint_y=None,
+            height=dp(160),
+            halign="center",
+            valign="middle"
+        ))
+        layout.children[0].bind(size=lambda lbl, *args: setattr(lbl, "text_size", lbl.size))
+
+        grid = GridLayout(cols=1, spacing=dp(10), size_hint_y=None)
+        grid.bind(minimum_height=grid.setter('height'))
+
+        acciones = [
+            ("Mostrar estado freemium", self._mostrar_estado),
+            ("Simular pago temporada", self._simular_temporada),
+            ("Probar flujo completo (mock)", self._probar_flujo),
+            ("Comprobar BD local", self._comprobar_bd),
+        ]
+        for texto, callback in acciones:
+            btn = Button(text=texto, size_hint_y=None, height=dp(48))
+            btn.bind(on_release=lambda _btn, cb=callback: cb())
+            grid.add_widget(btn)
+
+        layout.add_widget(grid)
+        self.add_widget(layout)
+
+    def _mostrar_estado(self):
+        info = self.state.fm.obtener_info_licencia()
+        texto = "\n".join([
             "== Freemium ==",
             f"modo_desarrollo: {info.get('modo_desarrollo')}",
             f"es_premium: {info.get('es_premium')}",
             f"tipo: {info.get('tipo')}",
             f"tiene_bbdd: {info.get('tiene_bbdd')}",
             f"anuncios_vistos: {info.get('anuncios_vistos')}",
-        ]
-        self.out.text = "\n".join(txt)
+        ])
+        self.append_log(texto)
 
-    def _simular_temporada(self, *args):
-        # Solo para pruebas: simular compra temporada
+    def _simular_temporada(self):
         try:
-            self.fm.simular_pago("temporada")
+            self.state.fm.simular_pago("temporada")
+            self.append_log("Licencia temporada simulada (modo desarrollo).")
             self._mostrar_estado()
-        except Exception as e:
-            self.out.text = f"Error simulando pago: {e}"
+        except Exception as exc:
+            self.append_log(f"Error simulando pago: {exc}")
 
-    def _probar_flujo(self, *args):
-        # Punto de conexión con la lógica real del flujo
-        # En esta primera versión, imprimimos que el flujo arrancaría
-        self.out.text = "Flujo completo listo (mock). Integraremos pantallas y acciones reales en siguientes iteraciones."
+    def _probar_flujo(self):
+        self.append_log("Flujo completo listo (mock). Integraremos pantallas reales en próximas iteraciones.")
 
-    def _comprobar_bd(self, *args):
+    def _comprobar_bd(self):
         try:
-            # Verifica conexión y tablas básicas
-            conn = self.db.get_connection()
+            conn = self.state.db.get_connection()
             cur = conn.cursor()
-            cur.execute("SELECT name FROM sqlite_master WHERE type='table' LIMIT 5")
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table' LIMIT 8")
             tablas = [r[0] for r in cur.fetchall()]
             conn.close()
-            self.out.text = "BD OK. Tablas: " + ", ".join(tablas)
-        except Exception as e:
-            self.out.text = f"Error BD: {e}"
+            self.append_log("BD OK. Tablas: " + ", ".join(tablas))
+        except Exception as exc:
+            self.append_log(f"Error BD: {exc}")
+
+
+def _placeholder_text(titulo: str) -> str:
+    return (f"{titulo}\n\nInterfaz pendiente de implementar en Kivy.\n"
+            "Se integrará con la lógica existente de escritorio (src/) "
+            "manteniendo el modo freemium y los algoritmos de la app principal.")
+
+
+class JornadaScreen(BaseScreen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        lbl = Label(text=_placeholder_text("Pantalla Jornada Actual"),
+                    halign="center", valign="middle")
+        lbl.bind(size=lambda lbl, *args: setattr(lbl, "text_size", lbl.size))
+        self.add_widget(lbl)
+
+
+class PronosticosScreen(BaseScreen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        lbl = Label(text=_placeholder_text("Pantalla Pronósticos"),
+                    halign="center", valign="middle")
+        lbl.bind(size=lambda lbl, *args: setattr(lbl, "text_size", lbl.size))
+        self.add_widget(lbl)
+
+
+class ReduccionScreen(BaseScreen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        lbl = Label(text=_placeholder_text("Pantalla Reducción Inteligente"),
+                    halign="center", valign="middle")
+        lbl.bind(size=lambda lbl, *args: setattr(lbl, "text_size", lbl.size))
+        self.add_widget(lbl)
+
+
+class AnalisisScreen(BaseScreen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        lbl = Label(text=_placeholder_text("Pantalla Análisis de Aciertos"),
+                    halign="center", valign="middle")
+        lbl.bind(size=lambda lbl, *args: setattr(lbl, "text_size", lbl.size))
+        self.add_widget(lbl)
+
+
+class QuinielaMobile(BoxLayout):
+    def __init__(self, **kwargs):
+        super().__init__(orientation="vertical", **kwargs)
+        self.state = App.get_running_app().state
+
+        header = Label(text="Quiniela Pro · APK Desarrollo", size_hint_y=None, height=dp(48))
+        self.add_widget(header)
+
+        nav = BoxLayout(size_hint_y=None, height=dp(46), spacing=dp(4), padding=(dp(4), 0))
+        botones = [
+            ("Menú", "menu"),
+            ("Jornada", "jornada"),
+            ("Pronósticos", "pronosticos"),
+            ("Reducción", "reduccion"),
+            ("Análisis", "analisis"),
+        ]
+        for texto, pantalla in botones:
+            btn = Button(text=texto)
+            btn.bind(on_release=lambda _btn, scr=pantalla: self.switch_screen(scr))
+            nav.add_widget(btn)
+        self.add_widget(nav)
+
+        self.screen_manager = ScreenManager(transition=FadeTransition())
+        self.screen_manager.add_widget(MenuScreen(name="menu"))
+        self.screen_manager.add_widget(JornadaScreen(name="jornada"))
+        self.screen_manager.add_widget(PronosticosScreen(name="pronosticos"))
+        self.screen_manager.add_widget(ReduccionScreen(name="reduccion"))
+        self.screen_manager.add_widget(AnalisisScreen(name="analisis"))
+        self.add_widget(self.screen_manager)
+
+        self.log_label = Label(text="Listo.\n", size_hint_y=None, height=dp(600),
+                               halign="left", valign="top")
+        self.log_label.bind(size=lambda lbl, *args: setattr(lbl, "text_size", (lbl.width, None)))
+        self.log_label.bind(texture_size=lambda lbl, *args: setattr(lbl, "height", lbl.texture_size[1] + dp(10)))
+        scroll = ScrollView(size_hint_y=0.25)
+        scroll.add_widget(self.log_label)
+        self.add_widget(scroll)
+
+    def switch_screen(self, nombre: str):
+        if nombre in self.screen_manager.screen_names:
+            self.screen_manager.current = nombre
+            self.append_log(f"Navegando a: {nombre}")
+
+    def append_log(self, mensaje: str):
+        self.log_label.text += mensaje + "\n"
 
 
 class QuinielaApp(App):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.state = QuinielaState()
+
     def build(self):
         Window.size = (420, 800)
         return QuinielaMobile()

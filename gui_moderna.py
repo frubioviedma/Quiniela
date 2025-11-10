@@ -400,6 +400,10 @@ class QuinielaModernaApp:
                     command=self.ir_a_reducir,
                     bg="#9333ea", width=200).pack(side='left', padx=5)
         
+        ModernButton(btn_frame, "💾 Guardar Quiniela",
+                    command=self.guardar_quiniela_actual,
+                    bg=COLOR_SUCCESS, width=220).pack(side='left', padx=5)
+        
         # Área de quiniela (scrollable)
         canvas_frame = ttk.Frame(frame, style='Surface.TFrame')
         canvas_frame.pack(fill='both', expand=True, padx=20, pady=(0, 20))
@@ -651,6 +655,10 @@ class QuinielaModernaApp:
                     command=self.aplicar_reduccion,
                     bg=COLOR_ACCENT, width=220, height=45).pack()
         
+        ModernButton(btn_subframe2, "💾 Guardar Quiniela",
+                    command=self.guardar_quiniela_actual,
+                    bg=COLOR_SUCCESS, width=220, height=45).pack(pady=(10, 0))
+        
         canvas_cond.pack(side='left', fill='both', expand=True)
         scrollbar_cond.pack(side='right', fill='y')
         
@@ -717,10 +725,6 @@ class QuinielaModernaApp:
         # Fila 2: Botones de acción
         row2 = ttk.Frame(header_content, style='Surface.TFrame')
         row2.grid(row=2, column=0, columnspan=4, pady=15)
-        
-        ModernButton(row2, "💾 Guardar Quiniela Actual",
-                    command=self.guardar_quiniela_actual,
-                    bg=COLOR_SUCCESS, width=200).pack(side='left', padx=5)
         
         ModernButton(row2, "📂 Cargar Quiniela Guardada",
                     command=self.cargar_quiniela_guardada,
@@ -816,6 +820,174 @@ class QuinielaModernaApp:
         
         # Archivo para guardar quinielas
         self.quinielas_file = BASE_DIR / "quinielas_guardadas.json"
+
+    def create_historico_tab(self):
+        """Pestaña para consultar histórico de jornadas"""
+        frame = ttk.Frame(self.notebook, style='Modern.TFrame')
+        self.notebook.add(frame, text='📚 Histórico')
+        
+        header = ttk.Frame(frame, style='Surface.TFrame')
+        header.pack(fill='x', padx=20, pady=20)
+        
+        header_content = ttk.Frame(header, style='Surface.TFrame')
+        header_content.pack(padx=20, pady=15, fill='x')
+        
+        ttk.Label(header_content, text="Consulta Histórica de Jornadas",
+                 font=('Segoe UI', 16, 'bold'),
+                 style='Modern.TLabel').grid(row=0, column=0, columnspan=4, pady=(0, 15))
+        
+        ttk.Label(header_content, text="Temporada:", style='Modern.TLabel').grid(row=1, column=0, padx=5, sticky='e')
+        self.historico_temporada_combo = ttk.Combobox(header_content, width=18, state='readonly')
+        self.historico_temporada_combo.grid(row=1, column=1, padx=5, sticky='w')
+        self.historico_temporada_combo.bind("<<ComboboxSelected>>", self._on_historico_temporada_change)
+        
+        ttk.Label(header_content, text="Jornada:", style='Modern.TLabel').grid(row=1, column=2, padx=5, sticky='e')
+        self.historico_jornada_combo = ttk.Combobox(header_content, width=10, state='readonly')
+        self.historico_jornada_combo.grid(row=1, column=3, padx=5, sticky='w')
+        self.historico_jornada_combo.bind("<<ComboboxSelected>>", lambda e: self._cargar_historico_jornada())
+        
+        btn_frame = ttk.Frame(header_content, style='Surface.TFrame')
+        btn_frame.grid(row=2, column=0, columnspan=4, pady=10)
+        
+        ModernButton(btn_frame, "📥 Cargar Jornada Histórica",
+                    command=self._cargar_historico_jornada,
+                    bg=COLOR_ACCENT, width=250).pack(side='left', padx=5)
+        
+        ModernButton(btn_frame, "⭐ Obtener BBDD Histórica",
+                    command=lambda: self._abrir_compra_bbdd(),
+                    bg=COLOR_WARNING, width=250).pack(side='left', padx=5)
+        
+        # Tabla de resultados históricos
+        tree_frame = ttk.Frame(frame, style='Surface.TFrame')
+        tree_frame.pack(fill='both', expand=True, padx=20, pady=(0, 20))
+        
+        columns = ('Partido', 'Local', 'Visitante', 'Resultado', 'Signo')
+        self.historico_tree = ttk.Treeview(tree_frame, columns=columns, show='headings', height=16)
+        for col in columns:
+            width = 80 if col == 'Partido' else (200 if col in ['Local', 'Visitante'] else 140)
+            self.historico_tree.heading(col, text=col)
+            self.historico_tree.column(col, width=width, anchor='center')
+        
+        historico_scroll = ttk.Scrollbar(tree_frame, orient='vertical', command=self.historico_tree.yview)
+        self.historico_tree.configure(yscrollcommand=historico_scroll.set)
+        self.historico_tree.pack(side='left', fill='both', expand=True)
+        historico_scroll.pack(side='right', fill='y')
+        
+        # Estadísticas/resumen
+        stats_frame = ttk.Frame(frame, style='Surface.TFrame')
+        stats_frame.pack(fill='x', padx=20, pady=(0, 20))
+        
+        self.historico_stats_label = ttk.Label(stats_frame, text="Instala la BBDD histórica para consultar resultados desde 1920.",
+                                               style='Modern.TLabel',
+                                               font=('Segoe UI', 10, 'italic'))
+        self.historico_stats_label.pack(anchor='w', padx=5, pady=5)
+        
+        self._inicializar_historico_tab()
+    
+    def _inicializar_historico_tab(self):
+        """Cargar temporadas disponibles y estado de la pestaña histórico"""
+        try:
+            temporadas = self.db.get_all_seasons()
+            if not temporadas:
+                temporadas = ['2025-26', '2024-25', '2023-24']
+            self.historico_temporada_combo['values'] = temporadas
+            self.historico_temporada_combo.current(0)
+            self._actualizar_historico_jornadas(temporadas[0])
+        except Exception as e:
+            logger.error(f"Error inicializando pestaña histórico: {e}", exc_info=True)
+            self.historico_temporada_combo['values'] = ['2025-26']
+            self.historico_temporada_combo.current(0)
+            self.historico_jornada_combo['values'] = ['1']
+            self.historico_jornada_combo.current(0)
+        finally:
+            self.actualizar_estado_historico_tab()
+    
+    def _actualizar_historico_jornadas(self, temporada):
+        """Actualizar lista de jornadas disponibles para una temporada"""
+        try:
+            jornadas = self.db.get_jornadas_for_season(temporada)
+            if not jornadas:
+                jornadas = list(range(1, 16))
+            self.historico_jornada_combo['values'] = [str(j) for j in jornadas]
+            self.historico_jornada_combo.current(0)
+        except Exception as e:
+            logger.error(f"Error obteniendo jornadas históricas: {e}")
+            self.historico_jornada_combo['values'] = ['1']
+            self.historico_jornada_combo.current(0)
+    
+    def _on_historico_temporada_change(self, event=None):
+        temporada = self.historico_temporada_combo.get()
+        if temporada:
+            self._actualizar_historico_jornadas(temporada)
+            self._cargar_historico_jornada()
+    
+    def actualizar_estado_historico_tab(self):
+        """Habilitar o deshabilitar controles según licencia BBDD histórica"""
+        tiene_bbdd = self.freemium_manager.tiene_bbdd_historica()
+        for widget in [self.historico_temporada_combo, self.historico_jornada_combo]:
+            widget.configure(state='readonly' if tiene_bbdd else 'disabled')
+        for child in self.historico_tree.get_children():
+            self.historico_tree.delete(child)
+        if tiene_bbdd:
+            self.historico_stats_label.config(
+                text="Selecciona temporada y jornada para consultar resultados históricos."
+            )
+            self._cargar_historico_jornada()
+        else:
+            self.historico_stats_label.config(
+                text="Opciones bloqueadas. Adquiere la base de datos histórica para desbloquear el histórico completo."
+            )
+    
+    def _cargar_historico_jornada(self):
+        """Cargar resultados de jornada histórica seleccionada"""
+        if not self.freemium_manager.tiene_bbdd_historica():
+            self._mostrar_dialogo_bbdd_promocion(force=True)
+            return
+        temporada = self.historico_temporada_combo.get()
+        jornada_str = self.historico_jornada_combo.get()
+        if not temporada or not jornada_str:
+            return
+        try:
+            jornada = int(jornada_str)
+        except ValueError:
+            jornada = 1
+        try:
+            resultados = self.db.get_historical_results(temporada, jornada)
+        except Exception as e:
+            logger.error(f"Error cargando histórico: {e}", exc_info=True)
+            resultados = []
+        
+        for item in self.historico_tree.get_children():
+            self.historico_tree.delete(item)
+        
+        if not resultados:
+            self.historico_stats_label.config(
+                text=f"No hay resultados registrados para {temporada} jornada {jornada}."
+            )
+            return
+        
+        for res in resultados:
+            partido_num = res.get('partido_numero') or res.get('num') or '?'
+            local = res.get('local', '')
+            visitante = res.get('visitante', '')
+            goles_local = res.get('goles_local')
+            goles_visitante = res.get('goles_visitante')
+            signo = res.get('signo') or res.get('quiniela', '-')
+            if goles_local is None or goles_visitante is None:
+                resultado_txt = "Pendiente"
+            else:
+                resultado_txt = f"{goles_local}-{goles_visitante}"
+            self.historico_tree.insert('', 'end', values=(
+                partido_num,
+                local,
+                visitante,
+                resultado_txt,
+                signo
+            ))
+        
+        self.historico_stats_label.config(
+            text=f"Mostrando {len(resultados)} partidos · Temporada {temporada} · Jornada {jornada}"
+        )
     
     # ========== MÉTODOS FUNCIONALES (de interfaz_v3.py) ==========
     
@@ -1199,6 +1371,14 @@ class QuinielaModernaApp:
         
         # Después de crear todas las filas, proponer automáticamente el resultado para el partido 15
         self._proponer_resultado_pleno_15()
+        
+        # Refrescar visualización simulada con los datos actuales
+        try:
+            quiniela_data = self._construir_datos_quiniela_actual()
+            self.quiniela_guardada = quiniela_data
+            self.mostrar_quiniela_simulada(quiniela_data)
+        except Exception as e:
+            logger.debug(f"No se pudo refrescar quiniela simulada: {e}")
 
     def _construir_resultados_dict(self):
         """Construir diccionario de resultados para acceso rápido por número de partido"""
@@ -1645,8 +1825,23 @@ class QuinielaModernaApp:
     def _calcular_probabilidades_pleno_15(self, partido):
         """Calcular probabilidades para Pleno al 15 (0, 1, 2, M) para cada equipo usando Poisson"""
         try:
-            from scipy.stats import poisson
             from src.modelo_probabilistico import estimar_lambdas_equipo
+            import importlib
+            try:
+                scipy_stats = importlib.import_module("scipy.stats")
+                
+                def pmf(valor, lam):
+                    return float(scipy_stats.poisson.pmf(valor, lam))
+            except ModuleNotFoundError:
+                from src.modelo_probabilistico import poisson_pmf
+                
+                def pmf(valor, lam):
+                    return float(poisson_pmf(lam, valor))
+            except Exception:
+                from src.modelo_probabilistico import poisson_pmf
+                
+                def pmf(valor, lam):
+                    return float(poisson_pmf(lam, valor))
             
             local = partido.get('local', '')
             visitante = partido.get('visitante', '')
@@ -1667,16 +1862,16 @@ class QuinielaModernaApp:
             
             # Calcular probabilidades para cada equipo por separado
             # Probabilidades de goles para el equipo local
-            prob_local_0 = poisson.pmf(0, lambda_local)
-            prob_local_1 = poisson.pmf(1, lambda_local)
-            prob_local_2 = poisson.pmf(2, lambda_local)
-            prob_local_M = 1.0 - (prob_local_0 + prob_local_1 + prob_local_2)  # 3+ goles
+            prob_local_0 = pmf(0, lambda_local)
+            prob_local_1 = pmf(1, lambda_local)
+            prob_local_2 = pmf(2, lambda_local)
+            prob_local_M = max(0.0, 1.0 - (prob_local_0 + prob_local_1 + prob_local_2))  # 3+ goles
             
             # Probabilidades de goles para el equipo visitante
-            prob_visitante_0 = poisson.pmf(0, lambda_visitante)
-            prob_visitante_1 = poisson.pmf(1, lambda_visitante)
-            prob_visitante_2 = poisson.pmf(2, lambda_visitante)
-            prob_visitante_M = 1.0 - (prob_visitante_0 + prob_visitante_1 + prob_visitante_2)  # 3+ goles
+            prob_visitante_0 = pmf(0, lambda_visitante)
+            prob_visitante_1 = pmf(1, lambda_visitante)
+            prob_visitante_2 = pmf(2, lambda_visitante)
+            prob_visitante_M = max(0.0, 1.0 - (prob_visitante_0 + prob_visitante_1 + prob_visitante_2))  # 3+ goles
             
             # Normalizar a porcentajes para equipo local
             total_local = prob_local_0 + prob_local_1 + prob_local_2 + prob_local_M
@@ -1848,6 +2043,13 @@ class QuinielaModernaApp:
             messagebox.showinfo("Éxito", 
                 f"✅ Quiniela generada:\n{num_triples} triples + {num_dobles} dobles")
             
+            try:
+                datos = self._construir_datos_quiniela_actual()
+                self.quiniela_guardada = datos
+                self.mostrar_quiniela_simulada(datos)
+            except Exception as e:
+                logger.debug(f"No se pudo actualizar la quiniela simulada tras rellenado automático: {e}")
+            
         except Exception as e:
             messagebox.showerror("Error", f"Error generando quiniela: {e}")
     
@@ -1864,6 +2066,8 @@ class QuinielaModernaApp:
                 # Partidos 1-14: estructura normal
                 for var in partido_ui['vars'].values():
                     var.set(False)
+        self.quiniela_guardada = None
+        self.mostrar_quiniela_simulada()
     
     def cargar_quiniela_oficial(self):
         """Scrapear quiniela oficial desde webprincipal.com"""
@@ -2348,6 +2552,51 @@ class QuinielaModernaApp:
             self._guardar_quiniela_actual_real,
             self.freemium_manager
         )
+
+    def _construir_datos_quiniela_actual(self):
+        """Construir estructura de la quiniela actual desde la UI"""
+        if not self.quiniela_partidos:
+            raise ValueError("No hay quiniela cargada en la interfaz")
+        
+        temporada = self.temporada_combo.get() if hasattr(self, 'temporada_combo') else '2025-26'
+        jornada = int(self.jornada_spin.get()) if hasattr(self, 'jornada_spin') else 1
+        
+        quiniela_data = {
+            'temporada': temporada,
+            'jornada': jornada,
+            'fecha_guardado': datetime.now().isoformat(),
+            'partidos': []
+        }
+        
+        for partido_ui in self.quiniela_partidos:
+            num_partido = partido_ui.get('num', 0)
+            partido_info = partido_ui.get('partido', {})
+            
+            if num_partido == 15:
+                vars_partido = partido_ui['vars']
+                local_seleccionado = [s for s in ['0', '1', '2', 'M'] if vars_partido['local'][s].get()]
+                visitante_seleccionado = [s for s in ['0', '1', '2', 'M'] if vars_partido['visitante'][s].get()]
+                
+                quiniela_data['partidos'].append({
+                    'num': 15,
+                    'local': partido_info.get('local', ''),
+                    'visitante': partido_info.get('visitante', ''),
+                    'signo_local': local_seleccionado[0] if local_seleccionado else '',
+                    'signo_visitante': visitante_seleccionado[0] if visitante_seleccionado else '',
+                    'tipo': 'pleno_15'
+                })
+            else:
+                vars_partido = partido_ui['vars']
+                seleccionados = [s for s in ['1', 'X', '2'] if vars_partido[s].get()]
+                
+                quiniela_data['partidos'].append({
+                    'num': num_partido,
+                    'local': partido_info.get('local', ''),
+                    'visitante': partido_info.get('visitante', ''),
+                    'signos': seleccionados,
+                    'tipo': 'normal'
+                })
+        return quiniela_data
     
     def _guardar_quiniela_actual_real(self):
         """Método real que guarda la quiniela"""
@@ -2356,48 +2605,7 @@ class QuinielaModernaApp:
             return
         
         try:
-            # Obtener temporada y jornada actual
-            temporada = self.temporada_combo.get() if hasattr(self, 'temporada_combo') else '2025-26'
-            jornada = int(self.jornada_spin.get()) if hasattr(self, 'jornada_spin') else 1
-            
-            # Construir la quiniela guardada
-            quiniela_data = {
-                'temporada': temporada,
-                'jornada': jornada,
-                'fecha_guardado': datetime.now().isoformat(),
-                'partidos': []
-            }
-            
-            for partido_ui in self.quiniela_partidos:
-                num_partido = partido_ui.get('num', 0)
-                partido_info = partido_ui.get('partido', {})
-                
-                if num_partido == 15:
-                    # Pleno al 15
-                    vars_partido = partido_ui['vars']
-                    local_seleccionado = [s for s in ['0', '1', '2', 'M'] if vars_partido['local'][s].get()]
-                    visitante_seleccionado = [s for s in ['0', '1', '2', 'M'] if vars_partido['visitante'][s].get()]
-                    
-                    quiniela_data['partidos'].append({
-                        'num': 15,
-                        'local': partido_info.get('local', ''),
-                        'visitante': partido_info.get('visitante', ''),
-                        'signo_local': local_seleccionado[0] if local_seleccionado else '',
-                        'signo_visitante': visitante_seleccionado[0] if visitante_seleccionado else '',
-                        'tipo': 'pleno_15'
-                    })
-                else:
-                    # Partidos 1-14
-                    vars_partido = partido_ui['vars']
-                    seleccionados = [s for s in ['1', 'X', '2'] if vars_partido[s].get()]
-                    
-                    quiniela_data['partidos'].append({
-                        'num': num_partido,
-                        'local': partido_info.get('local', ''),
-                        'visitante': partido_info.get('visitante', ''),
-                        'signos': seleccionados,
-                        'tipo': 'normal'
-                    })
+            quiniela_data = self._construir_datos_quiniela_actual()
             
             # Cargar quinielas existentes o crear lista nueva
             if self.quinielas_file.exists():
@@ -2413,8 +2621,12 @@ class QuinielaModernaApp:
             with open(self.quinielas_file, 'w', encoding='utf-8') as f:
                 json.dump(quinielas, f, indent=2, ensure_ascii=False)
             
+            # Actualizar referencia en memoria y simulación
+            self.quiniela_guardada = quiniela_data
+            self.mostrar_quiniela_simulada(self.quiniela_guardada)
+            
             messagebox.showinfo("Éxito", 
-                f"✅ Quiniela guardada:\nTemporada: {temporada}\nJornada: {jornada}\nTotal partidos: {len(quiniela_data['partidos'])}")
+                f"✅ Quiniela guardada:\nTemporada: {quiniela_data.get('temporada')}\nJornada: {quiniela_data.get('jornada')}\nTotal partidos: {len(quiniela_data['partidos'])}")
             
         except Exception as e:
             messagebox.showerror("Error", f"Error guardando quiniela: {e}")

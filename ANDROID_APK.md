@@ -21,71 +21,30 @@ Requisitos
   - python3 -m pip install buildozer
   - buildozer android debug (la primera vez pedirá instalar dependencias de Android SDK/NDK).
 
-Estructura recomendada del proyecto móvil
+Estructura del proyecto móvil (ya incluida)
 
-- Crea una carpeta app_android/ para la app Kivy mínima:
-  - app_android/main.py → punto de entrada Kivy (UI mínima; llama a la lógica de Quiniela).
-  - app_android/buildozer.spec → configuración de buildozer.
-  - app_android/assets/ → recursos opcionales.
-  - Reutiliza el paquete de lógica existente importando desde ../src cuando sea posible.
+- `app_android/main.py`: app Kivy en modo mock con navegación básica (Menú, Jornada, Pronósticos, Reducción, Análisis) y log inferior.
+- `app_android/buildozer.spec`: configuración lista para compilar (Kivy + requests + BeautifulSoup4).
+- Se reutiliza la lógica de `src/` mediante `sys.path`.
 
-Ejemplo de main.py mínimo (Kivy) que activa modo desarrollo
-
-Nota: Solo es un esqueleto para validar que la lógica arranca; podrás ampliarlo con pantallas reales.
+Fragmento relevante de `main.py`
 
 ```python
-import os
-os.environ["QUINIELA_DEV_MODE"] = "1"  # freemium en mock, sin bloqueos
-
-from kivy.app import App
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
-from kivy.uix.label import Label
-from kivy.uix.scrollview import ScrollView
-from kivy.core.window import Window
-
-# Importa la lógica: adapta rutas si es necesario
-from pathlib import Path
-import sys
-BASE_DIR = Path(__file__).resolve().parent.parent
-if str(BASE_DIR) not in sys.path:
-    sys.path.insert(0, str(BASE_DIR))
-
-from src.freemium import FreemiumManager
-from src.database import DatabaseManager
-from src.config import DB_PATH
-
-class QuinielaMobile(BoxLayout):
-    def __init__(self, **kwargs):
-        super().__init__(orientation="vertical", **kwargs)
-        self.label = Label(text="Quiniela Pro (APK - DEV)", size_hint_y=None, height=40)
-        self.add_widget(self.label)
-        self.btn = Button(text="Probar flujo (mock)", size_hint_y=None, height=50)
-        self.btn.bind(on_release=self.probar_flujo)
-        self.add_widget(self.btn)
-        self.out = Label(text="", size_hint_y=None, height=800)
-        sv = ScrollView()
-        sv.add_widget(self.out)
-        self.add_widget(sv)
-
-        self.fm = FreemiumManager()
-        self.db = DatabaseManager(DB_PATH)
-
-    def probar_flujo(self, *args):
-        # Aquí llamarías a funciones reales: cargar 15 partidos, calcular probabilidades,
-        # generar quiniela, aplicar condiciones y reducción, etc.
-        # En esta versión se deja en mock para verificar que arranca.
-        info = self.fm.obtener_info_licencia()
-        self.out.text = f"DEV_MODE: {info.get('modo_desarrollo')}, premium: {info.get('es_premium')}"
-
 class QuinielaApp(App):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.state = QuinielaState()  # FreemiumManager + DatabaseManager
+
     def build(self):
         Window.size = (420, 800)
-        return QuinielaMobile()
-
-if __name__ == "__main__":
-    QuinielaApp().run()
+        return QuinielaMobile()  # Incluye ScreenManager y log inferior
 ```
+
+Cada pantalla es un placeholder que mostrará mensajes cuando se integre la UI real. El menú permite:
+
+- Mostrar estado freemium (mock).
+- Simular pago de temporada.
+- Lanzar comprobaciones de flujo y base de datos local.
 
 buildozer.spec mínimo (app_android/buildozer.spec)
 
@@ -119,10 +78,8 @@ warn_on_root = 0
 
 Nota sobre SciPy/Poisson en Android
 
-- SciPy no es trivial de compilar con python-for-android. Para el Pleno al 15, sustituye scipy.stats.poisson.pmf por una implementación ligera:
-  - pmf(k, λ) = e^{-λ} λ^k / k!
-  - Puedes programarla con math.exp y una función factorial/recurrente (sin SciPy).
-  - Alternativa: activar un flag “MODO_LIGERO_SIN_SCIPY” en el APK v0.1 que use esta versión simple.
+- SciPy no es trivial de compilar con python-for-android. El código de escritorio ya incluye un fallback (`poisson_pmf` en `src/modelo_probabilistico.py`) que usa `math.exp` + factorial.
+- `_calcular_probabilidades_pleno_15` en `gui_moderna.py` intenta usar SciPy y cae al fallback automáticamente (mismo comportamiento en Kivy).
 
 SQLite y ficheros
 
@@ -136,7 +93,9 @@ Compilación del APK
    - buildozer android debug
 
 2) El APK quedará en bin/ (por ejemplo bin/quinielapro-0.1-debug.apk).
-3) Instálalo en el móvil (activar “orígenes desconocidos” si hace falta).
+3) Instálalo en el móvil:
+   - Activar “orígenes desconocidos”.
+   - O usar ADB: `adb install -r bin/quinielapro-0.1-debug.apk`.
 
 Modo freemium en desarrollo (mock)
 
@@ -156,7 +115,7 @@ Buenas prácticas y siguientes pasos
 
 - No mezclar tkinter con Kivy: en móvil mantén una UI Kivy mínima que invoque la lógica de src/.
 - Extraer la lógica (scraping, reducción, modelo probabilístico) a funciones puras en src/ para llamarlas desde tkinter (desktop) y Kivy (móvil).
-- Añadir una implementación de Poisson ligera sin SciPy para Android.
+- Usar la implementación de Poisson ligera (`poisson_pmf`) en entornos sin SciPy.
 - Añadir tareas CI (GitHub Actions) que validen import y lint del subset móvil (sin SciPy).
 - Cuando la UI Kivy esté lista, reemplazar el mock de anuncios por KivMob y activar el flujo freemium real (desactivar QUINIELA_DEV_MODE).
 

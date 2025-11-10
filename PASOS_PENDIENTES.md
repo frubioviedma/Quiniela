@@ -90,26 +90,33 @@ python interfaz_v3.py
 
 ### 4. Preparar para App Móvil (APK) 📱
 
-**Objetivo:** Adaptar la app para compilar como APK
+**Objetivo:** Mantener la app lista para compilar como APK y evolucionar la UI móvil.
 
-**Pasos:**
-1. **Adaptar GUI a Kivy**
-   - [ ] Crear `gui_kivy.py` basado en `gui_moderna.py`
-   - [ ] Convertir widgets Tkinter a widgets Kivy
-   - [ ] Mantener lógica de negocio intacta
-   - [ ] Adaptar diseño para móvil (responsive)
+**Estado actual:**
+- [x] Esqueleto `app_android/main.py` con navegación básica y logs.
+- [x] `app_android/buildozer.spec` inicial.
+- [x] Documentación `ANDROID_APK.md`.
 
-2. **Configurar Buildozer**
-   - [ ] Crear `buildozer.spec`
-   - [ ] Configurar dependencias
-   - [ ] Configurar permisos Android
-   - [ ] Configurar iconos y recursos
+**Tareas abiertas:**
+1. **UI Kivy Responsive**
+   - [ ] Implementar pantallas reales (Jornada/Pronósticos/Reducción/Análisis) reutilizando lógica de `src/`.
+   - [ ] Integrar flujo freemium mock en cada transición.
+   - [ ] Diseñar componentes responsive (botones, tablas, listas).
 
-3. **Probar compilación**
-   - [ ] Compilar APK de prueba
-   - [ ] Probar en dispositivo Android
-   - [ ] Verificar que funciona offline
-   - [ ] Verificar que BBDD local funciona
+2. **Pipeline Buildozer / QA**
+   - [ ] Preparar entorno WSL/Ubuntu para build (script o README corto).
+   - [ ] Ejecutar `buildozer android debug` y documentar salida.
+   - [ ] Instalar en dispositivo (adb install) y validar arranque.
+   - [ ] Checklist de pruebas móviles (modo avión, reinicio, almacenamiento).
+
+3. **Integración futura de publicidad**
+   - [ ] Añadir `kivmob` a requirements (cuando haya UI final).
+   - [ ] Configurar IDs de AdMob (variables de entorno).
+   - [ ] Implementar banners/interstitial mock → reales.
+
+4. **Sincronización con escritorio**
+   - [ ] Compartir helpers (Poisson ligero, reducción) entre Tkinter y Kivy sin duplicación.
+   - [ ] Reutilizar plantillas de datos (`_construir_datos_quiniela_actual`) para exportar/importar entre entornos.
 
 ### 5. Implementar Sistema de IA 🤖
 

@@ -17,7 +17,8 @@ Puntos del flujo (ya integrados con freemium)
 - “Rellenar Automáticamente”.
 - “Aplicar Condiciones”.
 - “Aplicar Reducción”.
-- “Guardar Quiniela” / “Comparar Resultados”.
+- “Guardar Quiniela” (hoy en pestañas “Pronósticos” y “Reducción”).
+- “Comparar Resultados” (pestaña “Análisis”: solo carga/compare).
 
 Modo desarrollo (mock)
 
@@ -29,6 +30,7 @@ Android (Kivy) – plan de producción
 - Integrar `kivmob` (AdMob) en la UI Kivy móvil (cuando la UI esté lista).
 - Tipos de anuncio: banner fijo en pantallas largas (reducción/análisis) e interstitial entre pasos clave.
 - Fallback: si no hay red o falla la carga, permitir continuar y registrar evento.
+- El esqueleto `app_android/main.py` ya define navegación (Menú/Jornada/Pronósticos/Reducción/Análisis) para conectar anuncios cuando se implemente la UI final.
 
 Recomendaciones
 
