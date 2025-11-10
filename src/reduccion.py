@@ -595,6 +595,46 @@ class ReductorQuinielas:
                 # Por ahora permitimos todos si no hay patrones específicos
                 pass
         
+        # ========== CONDICIONES AVANZADAS (PREMIUM) ==========
+        
+        # Columna base
+        if filtros.get('columna_base'):
+            columna_base = filtros['columna_base']
+            if len(columna_base) == len(comb):
+                for i, signo_base in enumerate(columna_base):
+                    if signo_base in ['1', 'X', '2']:  # Signo fijo
+                        if comb[i] != signo_base:
+                            return False
+        
+        # Diferencias entre signos
+        if filtros.get('diferencias'):
+            diff_config = filtros['diferencias']
+            count_1 = comb.count('1')
+            count_2 = comb.count('2')
+            count_x = comb.count('X')
+            
+            tipo = diff_config.get('tipo', '1 vs 2')
+            min_diff = diff_config.get('min', -100)
+            max_diff = diff_config.get('max', 100)
+            
+            if tipo == '1 vs 2':
+                diff = count_1 - count_2
+            elif tipo == '1 vs X':
+                diff = count_1 - count_x
+            elif tipo == '2 vs X':
+                diff = count_2 - count_x
+            else:
+                diff = 0
+            
+            if diff < min_diff or diff > max_diff:
+                return False
+        
+        # Rangos (validación básica - requiere más lógica para suma goles/puntos)
+        if filtros.get('rangos'):
+            # Por ahora, validación básica
+            # En el futuro, calcular suma de goles/puntos estimados
+            pass
+        
         return True
     
     def _contar_interrupciones(self, comb: str) -> int:

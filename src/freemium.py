@@ -7,14 +7,24 @@ from typing import Optional, Dict
 import hashlib
 
 from src.config import DEV_MODE
+from src.config_paypal import ADMIN_MODE
 
 logger = logging.getLogger(__name__)
 
-# Precios
-PRECIO_SEMANAL = 2.99
-PRECIO_TEMPORADA = 29.99
-PRECIO_VIDA = 49.99
-PRECIO_BBDD_HISTORICA = 5.99
+# Precios originales
+PRECIO_SEMANAL_ORIGINAL = 2.99
+PRECIO_TEMPORADA_ORIGINAL = 29.99
+PRECIO_VIDA_ORIGINAL = 49.99
+PRECIO_BBDD_HISTORICA_ORIGINAL = 5.99
+
+# Descuento permanente del 20%
+DESCUENTO_PORCENTAJE = 0.20  # 20% de descuento
+
+# Precios con descuento
+PRECIO_SEMANAL = round(PRECIO_SEMANAL_ORIGINAL * (1 - DESCUENTO_PORCENTAJE), 2)  # 2.39€
+PRECIO_TEMPORADA = round(PRECIO_TEMPORADA_ORIGINAL * (1 - DESCUENTO_PORCENTAJE), 2)  # 23.99€
+PRECIO_VIDA = round(PRECIO_VIDA_ORIGINAL * (1 - DESCUENTO_PORCENTAJE), 2)  # 39.99€
+PRECIO_BBDD_HISTORICA = round(PRECIO_BBDD_HISTORICA_ORIGINAL * (1 - DESCUENTO_PORCENTAJE), 2)  # 4.79€
 
 # Email PayPal
 PAYPAL_EMAIL = "frubioviedma@gmail.com"
@@ -102,6 +112,11 @@ class FreemiumManager:
         Returns:
             True si tiene licencia premium válida
         """
+        # Modo admin: bypass completo (solo para desarrollo/admin)
+        if ADMIN_MODE:
+            logger.debug("Modo admin activo: acceso premium completo")
+            return True
+        
         if self.esta_en_modo_desarrollo():
             logger.debug("Modo desarrollo activo: acceso premium simulado")
             return True
@@ -151,6 +166,9 @@ class FreemiumManager:
             fecha_fin = fecha_inicio + timedelta(days=270)
         elif tipo_licencia == LICENCIA_VIDA:
             fecha_fin = None  # Sin fecha de fin
+            # Usuarios de por vida reciben gratis la BBDD histórica
+            self.license_data["bbdd_historica"] = True
+            logger.info("✅ Usuario de por vida: BBDD histórica regalada automáticamente")
         elif tipo_licencia == LICENCIA_BBDD:
             # Solo activa BBDD histórica, no cambia tipo de licencia
             self.license_data["bbdd_historica"] = True
@@ -183,6 +201,10 @@ class FreemiumManager:
         Returns:
             True si puede acceder (premium o tras anuncio)
         """
+        # Modo admin: bypass completo
+        if ADMIN_MODE:
+            return True
+        
         if self.verificar_licencia():
             return True  # Premium: acceso directo
         

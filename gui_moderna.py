@@ -5,6 +5,7 @@ SIMPLE, MODERNA Y FUNCIONAL
 import tkinter as tk
 from tkinter import ttk, messagebox
 import sys
+import os
 from pathlib import Path
 import sqlite3
 import requests
@@ -33,14 +34,19 @@ from src.config import setup_logging
 setup_logging()
 logger = logging.getLogger(__name__)
 
-# Colores modernos
-COLOR_BG = "#1e1e1e"  # Fondo oscuro
+# Colores modernos mejorados (inspirados en apps premium)
+COLOR_BG = "#0f0f0f"  # Fondo oscuro más profundo
 COLOR_FG = "#ffffff"  # Texto blanco
 COLOR_ACCENT = "#0078d4"  # Azul moderno
-COLOR_SURFACE = "#2d2d2d"  # Superficie elevada
+COLOR_ACCENT_LIGHT = "#40a9ff"  # Azul claro para hovers
+COLOR_SURFACE = "#1a1a1a"  # Superficie elevada más sutil
+COLOR_SURFACE_HOVER = "#252525"  # Superficie hover
 COLOR_SUCCESS = "#10b981"  # Verde éxito
 COLOR_WARNING = "#f59e0b"  # Naranja advertencia
 COLOR_ERROR = "#ef4444"  # Rojo error
+COLOR_PREMIUM = "#ffd700"  # Dorado para premium
+COLOR_GRADIENT_START = "#1a1a2e"  # Inicio gradiente
+COLOR_GRADIENT_END = "#16213e"  # Fin gradiente
 
 class ModernButton(tk.Canvas):
     """Botón moderno personalizado"""
@@ -121,6 +127,14 @@ class ModernButton(tk.Canvas):
         self.draw(self.bg_color)
     
     def on_click(self):
+        # Reproducir sonido de click
+        try:
+            from src.sound_manager import get_sound_manager
+            sound_mgr = get_sound_manager()
+            sound_mgr.play_click()
+        except Exception:
+            pass  # Si no hay sonidos, continuar
+        
         if self.command:
             self.command()
 
@@ -130,7 +144,7 @@ class QuinielaModernaApp:
     
     def __init__(self, root):
         self.root = root
-        self.root.title("Quiniela Pro - Análisis y Pronósticos")
+        self.root.title("La quiniela 1X2 - Análisis y Pronósticos")
         self.root.geometry("1400x900")
         self.root.configure(bg=COLOR_BG)
         
@@ -217,7 +231,81 @@ class QuinielaModernaApp:
         title_row = ttk.Frame(header, style='Modern.TFrame')
         title_row.pack(fill='x', pady=(0, 5))
         
-        title = ttk.Label(title_row, text="🎯 Quiniela Pro", 
+        # Logo placeholder (documentado en LOGO_CONFIG.md)
+        logo_frame = ttk.Frame(title_row, style='Modern.TFrame')
+        logo_frame.pack(side='left', anchor='w', padx=(0, 15))
+        
+        # Intentar cargar logo si existe (mejorado)
+        # Prioridad: logo.png > promocional.png (como icono)
+        logo_path = BASE_DIR / "assets" / "logo.png"
+        promocional_path = BASE_DIR / "assets" / "promocional.png"
+        
+        if logo_path.exists():
+            try:
+                from PIL import Image, ImageTk
+                logo_img = Image.open(logo_path)
+                # Redimensionar manteniendo aspecto (50x50 para mejor visibilidad)
+                logo_img = logo_img.resize((50, 50), Image.Resampling.LANCZOS)
+                self.logo_photo = ImageTk.PhotoImage(logo_img)
+                logo_label = ttk.Label(logo_frame, image=self.logo_photo, style='Modern.TLabel')
+                logo_label.pack()
+                # Añadir tooltip
+                logo_label.bind('<Enter>', lambda e: self._mostrar_tooltip(e, "La quiniela 1X2"))
+            except Exception as e:
+                logger.warning(f"No se pudo cargar logo: {e}")
+                # Fallback: intentar imagen promocional
+                if promocional_path.exists():
+                    try:
+                        from PIL import Image, ImageTk
+                        promo_img = Image.open(promocional_path)
+                        # Extraer parte del escudo como icono (recortar centro)
+                        w, h = promo_img.size
+                        crop_size = min(w, h) // 4
+                        left = w // 2 - crop_size
+                        top = h // 2 - crop_size
+                        right = w // 2 + crop_size
+                        bottom = h // 2 + crop_size
+                        icon_img = promo_img.crop((left, top, right, bottom))
+                        icon_img = icon_img.resize((50, 50), Image.Resampling.LANCZOS)
+                        self.logo_photo = ImageTk.PhotoImage(icon_img)
+                        logo_label = ttk.Label(logo_frame, image=self.logo_photo, style='Modern.TLabel')
+                        logo_label.pack()
+                        logo_label.bind('<Enter>', lambda e: self._mostrar_tooltip(e, "La quiniela 1X2"))
+                    except:
+                        # Fallback final: emoji
+                        logo_emoji = ttk.Label(logo_frame, text="⚽", font=('Segoe UI', 28), style='Modern.TLabel')
+                        logo_emoji.pack()
+                else:
+                    # Fallback: emoji mejorado
+                    logo_emoji = ttk.Label(logo_frame, text="⚽", font=('Segoe UI', 28), style='Modern.TLabel')
+                    logo_emoji.pack()
+        elif promocional_path.exists():
+            # Usar imagen promocional como logo (recortar parte central)
+            try:
+                from PIL import Image, ImageTk
+                promo_img = Image.open(promocional_path)
+                w, h = promo_img.size
+                crop_size = min(w, h) // 4
+                left = w // 2 - crop_size
+                top = h // 2 - crop_size
+                right = w // 2 + crop_size
+                bottom = h // 2 + crop_size
+                icon_img = promo_img.crop((left, top, right, bottom))
+                icon_img = icon_img.resize((50, 50), Image.Resampling.LANCZOS)
+                self.logo_photo = ImageTk.PhotoImage(icon_img)
+                logo_label = ttk.Label(logo_frame, image=self.logo_photo, style='Modern.TLabel')
+                logo_label.pack()
+                logo_label.bind('<Enter>', lambda e: self._mostrar_tooltip(e, "La quiniela 1X2"))
+            except Exception as e:
+                logger.warning(f"No se pudo cargar imagen promocional como logo: {e}")
+                logo_emoji = ttk.Label(logo_frame, text="⚽", font=('Segoe UI', 28), style='Modern.TLabel')
+                logo_emoji.pack()
+        else:
+            # Placeholder: emoji mejorado con estilo
+            logo_emoji = ttk.Label(logo_frame, text="⚽", font=('Segoe UI', 28), style='Modern.TLabel')
+            logo_emoji.pack()
+        
+        title = ttk.Label(title_row, text="La quiniela 1X2", 
                          style='Title.TLabel')
         title.pack(side='left', anchor='w')
         
@@ -256,9 +344,13 @@ class QuinielaModernaApp:
         # Crear pestañas
         self.create_jornada_tab()
         self.create_pronosticos_tab()
-        self.create_reduccion_tab()
+        self.create_condiciones_tab()  # Nueva pestaña separada
+        self.create_reduccion_tab()  # Solo reducción
         self.create_analisis_tab()
         self.create_historico_tab()
+        
+        # Interceptar cambios de pestaña para mostrar publicidad
+        self.notebook.bind("<<NotebookTabChanged>>", self._on_tab_changed)
     
     def create_jornada_tab(self):
         """Pestaña de jornada actual"""
@@ -290,39 +382,27 @@ class QuinielaModernaApp:
         self.jornada_spin.pack(side='left')
         self.jornada_spin.configure(command=self._on_cambio_jornada_principal)
         self.jornada_spin.bind('<Return>', lambda e: self._on_cambio_jornada_principal())
-        
-        # División
-        ttk.Label(row1, text="División:", style='Modern.TLabel').pack(side='left', padx=(30, 10))
-        self.division_combo = ttk.Combobox(row1, width=10, state='readonly')
-        self.division_combo['values'] = ['Primera', 'Segunda']
-        self.division_combo.current(0)
-        self.division_combo.pack(side='left')
         self.temporada_combo.bind("<<ComboboxSelected>>", lambda e: self._on_cambio_jornada_principal())
-        self.division_combo.bind("<<ComboboxSelected>>", lambda e: self._on_cambio_jornada_principal())
         
         # Fila 2: Botones de acción
         row2 = ttk.Frame(content, style='Surface.TFrame')
         row2.pack(fill='x', pady=20)
         
-        ModernButton(row2, "🔄 Cargar Jornada", 
-                    command=self.cargar_jornada,
-                    bg=COLOR_ACCENT).pack(side='left', padx=5)
+        ModernButton(row2, "🎯 Crear Quiniela Jornada Actual",
+                    command=self.cargar_quiniela_oficial,
+                    bg=COLOR_SUCCESS, width=280).pack(side='left', padx=5)
         
-        ModernButton(row2, "📥 Actualizar desde Web",
-                    command=self.actualizar_web,
-                    bg=COLOR_SUCCESS).pack(side='left', padx=5)
+        ModernButton(row2, "🔄 Cargar Jornada",
+                    command=self.cargar_jornada,
+                    bg=COLOR_ACCENT, width=200).pack(side='left', padx=5)
         
         ModernButton(row2, "🎲 Calcular Pronósticos",
                     command=self.calcular_pronosticos,
-                    bg=COLOR_WARNING).pack(side='left', padx=5)
+                    bg=COLOR_WARNING, width=220).pack(side='left', padx=5)
         
-        ModernButton(row2, "📝 Crear Quiniela",
+        ModernButton(row2, "📝 Ir a Pronósticos",
                     command=self.ir_a_crear_quiniela,
-                    bg="#9333ea").pack(side='left', padx=5)  # Morado
-        
-        ModernButton(row2, "🎯 Quiniela de la Jornada",
-                    command=self.cargar_quiniela_oficial,
-                    bg="#dc2626").pack(side='left', padx=5)  # Rojo
+                    bg="#9333ea", width=200).pack(side='left', padx=5)  # Morado
         
         # Tabla de partidos (moderna)
         table_frame = ttk.Frame(frame, style='Surface.TFrame')
@@ -331,7 +411,7 @@ class QuinielaModernaApp:
         # Título de la tabla
         table_header = ttk.Frame(table_frame, style='Surface.TFrame')
         table_header.pack(fill='x', padx=20, pady=10)
-        ttk.Label(table_header, text="Partidos de la Jornada",
+        ttk.Label(table_header, text="Partidos de la Quiniela (15 partidos)",
                  font=('Segoe UI', 14, 'bold'),
                  style='Modern.TLabel').pack(anchor='w')
         
@@ -427,40 +507,57 @@ class QuinielaModernaApp:
         
         self.quiniela_frame.bind('<Configure>', on_frame_configure)
     
-    def create_reduccion_tab(self):
-        """Pestaña de reducción con todas las opciones de condiciones"""
+    def _on_tab_changed(self, event=None):
+        """Interceptar cambios de pestaña para mostrar publicidad o verificar premium"""
+        try:
+            selected = self.notebook.index(self.notebook.select())
+            tab_names = ['Jornada Actual', 'Pronósticos', 'Condiciones', 'Reducción', 'Análisis', 'Histórico']
+            if selected < len(tab_names):
+                tab_name = tab_names[selected]
+                # No mostrar publicidad al cambiar a Jornada Actual (primera pestaña)
+                if selected > 0:
+                    # Verificar acceso premium para cambiar de pestaña
+                    if not self.freemium_manager.verificar_licencia():
+                        # Mostrar anuncio AdMob (con bypass en modo admin)
+                        from src.admob_manager import admob_manager
+                        admob_manager.mostrar_anuncio_intersticial()
+                        logger.info(f"Cambio a pestaña {tab_name} - Anuncio mostrado (o omitido en admin mode)")
+        except Exception as e:
+            logger.error(f"Error en cambio de pestaña: {e}")
+    
+    def create_condiciones_tab(self):
+        """Pestaña de condiciones avanzadas - Separada de reducción"""
         frame = ttk.Frame(self.notebook, style='Modern.TFrame')
-        self.notebook.add(frame, text='📊 Reducción')
+        self.notebook.add(frame, text='⚙️ Condiciones')
         
         # Título
         title_frame = ttk.Frame(frame, style='Surface.TFrame')
         title_frame.pack(fill='x', padx=20, pady=20)
-        ttk.Label(title_frame, text="Sistema de Reducción Inteligente",
+        ttk.Label(title_frame, text="Condiciones Avanzadas de Quiniela",
                  font=('Segoe UI', 18, 'bold'),
                  style='Modern.TLabel').pack(pady=10)
         
-        # Layout: Condiciones a la izquierda, resultados a la derecha
-        main_split = ttk.Frame(frame, style='Surface.TFrame')
-        main_split.pack(fill='both', expand=True, padx=20, pady=(0, 20))
+        # Info sobre condiciones
+        info_label = ttk.Label(title_frame, 
+                              text="Aplica condiciones estadísticas antes de reducir la quiniela",
+                              style='Modern.TLabel',
+                              font=('Segoe UI', 10, 'italic'))
+        info_label.pack(pady=(0, 10))
         
-        # Panel izquierdo: Condiciones (scrollable)
-        left_panel = ttk.Frame(main_split, style='Surface.TFrame', width=500)
-        left_panel.pack(side='left', fill='both', padx=(0, 10))
-        left_panel.pack_propagate(False)
+        # Scrollable frame para todas las condiciones
+        canvas_frame = tk.Canvas(frame, bg=COLOR_SURFACE, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=canvas_frame.yview)
+        cond_content = ttk.Frame(canvas_frame, style='Surface.TFrame')
         
-        # Scrollable frame para condiciones
-        canvas_cond = tk.Canvas(left_panel, bg=COLOR_SURFACE, highlightthickness=0)
-        scrollbar_cond = ttk.Scrollbar(left_panel, orient='vertical', command=canvas_cond.yview)
-        cond_frame = ttk.Frame(canvas_cond, style='Surface.TFrame')
+        canvas_frame.create_window((0, 0), window=cond_content, anchor='nw')
+        canvas_frame.configure(yscrollcommand=scrollbar.set)
         
-        canvas_cond.create_window((0, 0), window=cond_frame, anchor='nw')
-        canvas_cond.configure(yscrollcommand=scrollbar_cond.set)
+        # ========== CONDICIONES BÁSICAS (GRATIS) ==========
         
         # Sección 1: Signos Totales
-        sec1 = ttk.LabelFrame(cond_frame, text="Signos Totales", style='Surface.TFrame')
+        sec1 = ttk.LabelFrame(cond_content, text="Signos Totales", style='Surface.TFrame')
         sec1.pack(fill='x', padx=20, pady=10)
         
-        # Checkbox para activar/desactivar Signos Totales
         signos_totales_check_frame = ttk.Frame(sec1, style='Surface.TFrame')
         signos_totales_check_frame.pack(fill='x', padx=10, pady=5)
         self.usar_signos_totales = tk.BooleanVar(value=True)
@@ -515,10 +612,9 @@ class QuinielaModernaApp:
         self.max_variantes.pack(side='left', padx=5)
         
         # Sección 2: Signos Seguidos
-        sec2 = ttk.LabelFrame(cond_frame, text="Signos Seguidos", style='Surface.TFrame')
+        sec2 = ttk.LabelFrame(cond_content, text="Signos Seguidos", style='Surface.TFrame')
         sec2.pack(fill='x', padx=20, pady=10)
         
-        # Checkbox para activar/desactivar Signos Seguidos
         signos_seguidos_check_frame = ttk.Frame(sec2, style='Surface.TFrame')
         signos_seguidos_check_frame.pack(fill='x', padx=10, pady=5)
         self.usar_signos_seguidos = tk.BooleanVar(value=True)
@@ -549,11 +645,10 @@ class QuinielaModernaApp:
         self.max_doses_seguidos.set(14)
         self.max_doses_seguidos.pack(side='left', padx=5)
         
-        # Sección 3: Interrupciones (Cambios de Signo)
-        sec3 = ttk.LabelFrame(cond_frame, text="Interrupciones (Cambios de Signo)", style='Surface.TFrame')
+        # Sección 3: Interrupciones
+        sec3 = ttk.LabelFrame(cond_content, text="Interrupciones (Cambios de Signo)", style='Surface.TFrame')
         sec3.pack(fill='x', padx=20, pady=10)
         
-        # Checkbox para activar/desactivar Interrupciones
         interrupciones_check_frame = ttk.Frame(sec3, style='Surface.TFrame')
         interrupciones_check_frame.pack(fill='x', padx=10, pady=5)
         self.usar_interrupciones = tk.BooleanVar(value=True)
@@ -574,11 +669,10 @@ class QuinielaModernaApp:
         self.max_interrupciones.set(8)
         self.max_interrupciones.pack(side='left', padx=5)
         
-        # Sección 4: Parejas (todas las 9 combinaciones)
-        sec4 = ttk.LabelFrame(cond_frame, text="Parejas (Máx Repeticiones)", style='Surface.TFrame')
+        # Sección 4: Parejas
+        sec4 = ttk.LabelFrame(cond_content, text="Parejas (Máx Repeticiones)", style='Surface.TFrame')
         sec4.pack(fill='x', padx=20, pady=10)
         
-        # Checkbox para activar/desactivar parejas
         parejas_check_frame = ttk.Frame(sec4, style='Surface.TFrame')
         parejas_check_frame.pack(fill='x', padx=10, pady=5)
         self.usar_parejas = tk.BooleanVar(value=True)
@@ -590,7 +684,7 @@ class QuinielaModernaApp:
         
         parejas = ['11', '1X', '12', 'X1', 'XX', 'X2', '21', '2X', '22']
         self.max_parejas = {}
-        for i, pareja in enumerate(parejas):
+        for pareja in parejas:
             row = ttk.Frame(sec4, style='Surface.TFrame')
             row.pack(fill='x', padx=10, pady=2)
             ttk.Label(row, text=f"Máx {pareja}:", width=12, style='Modern.TLabel').pack(side='left')
@@ -599,11 +693,10 @@ class QuinielaModernaApp:
             var.pack(side='left', padx=5)
             self.max_parejas[pareja] = var
         
-        # Sección 5: Tríos (todas las 27 combinaciones - solo algunas importantes)
-        sec5 = ttk.LabelFrame(cond_frame, text="Tríos (Máx Repeticiones - Principales)", style='Surface.TFrame')
+        # Sección 5: Tríos
+        sec5 = ttk.LabelFrame(cond_content, text="Tríos (Máx Repeticiones)", style='Surface.TFrame')
         sec5.pack(fill='x', padx=20, pady=10)
         
-        # Checkbox para activar/desactivar tríos
         trios_check_frame = ttk.Frame(sec5, style='Surface.TFrame')
         trios_check_frame.pack(fill='x', padx=10, pady=5)
         self.usar_trios = tk.BooleanVar(value=True)
@@ -613,11 +706,9 @@ class QuinielaModernaApp:
                       selectcolor=COLOR_SURFACE,
                       font=('Segoe UI', 10, 'bold')).pack(side='left')
         
-        trios = ['111', '11X', '112', '1X1', '1XX', '1X2', '121', '12X', '122',
-                 'X11', 'X1X', 'X12', 'XX1', 'XXX', 'XX2', 'X21', 'X2X', 'X22',
-                 '211', '21X', '212', '2X1', '2XX', '2X2', '221', '22X', '222']
+        trios = ['111', '11X', '112', '1X1', '1XX', '1X2', '121', '12X', '122']
         self.max_trios = {}
-        for i, trio in enumerate(trios[:9]):  # Solo primeros 9 para no hacerlo muy largo
+        for trio in trios:
             row = ttk.Frame(sec5, style='Surface.TFrame')
             row.pack(fill='x', padx=10, pady=2)
             ttk.Label(row, text=f"Máx {trio}:", width=12, style='Modern.TLabel').pack(side='left')
@@ -626,51 +717,372 @@ class QuinielaModernaApp:
             var.pack(side='left', padx=5)
             self.max_trios[trio] = var
         
-        # Botones de acción - MÁS VISIBLES EN LA PARTE SUPERIOR (después del título)
+        # ========== CONDICIONES AVANZADAS (PREMIUM) ==========
+        
+        # Helper para crear secciones premium
+        def crear_seccion_premium(parent, titulo, es_premium=True):
+            """Crear sección premium (sombreada si no es premium)"""
+            sec = ttk.LabelFrame(parent, text=titulo, style='Surface.TFrame')
+            if not es_premium:
+                # Sombreado para indicar que es premium
+                sec.configure(style='PremiumDisabled.TFrame')
+            return sec
+        
+        # Sección 6: Grupos (PREMIUM)
+        sec6 = crear_seccion_premium(cond_content, "📊 Grupos (Premium)", 
+                                    self.freemium_manager.verificar_licencia())
+        sec6.pack(fill='x', padx=20, pady=10)
+        
+        if not self.freemium_manager.verificar_licencia():
+            ttk.Label(sec6, text="⭐ Opción Premium - Actualiza para usar grupos",
+                     style='Modern.TLabel', foreground=COLOR_WARNING,
+                     font=('Segoe UI', 10, 'bold')).pack(pady=10)
+        else:
+            # UI para grupos (simplificada por ahora)
+            ttk.Label(sec6, text="Configura grupos de partidos con reglas específicas",
+                     style='Modern.TLabel', font=('Segoe UI', 9, 'italic')).pack(pady=5)
+            ModernButton(sec6, "➕ Crear Grupo",
+                        command=lambda: self._crear_grupo(),
+                        bg=COLOR_ACCENT, width=200).pack(pady=5)
+        
+        # Sección 7: Columna Base (PREMIUM)
+        sec7 = crear_seccion_premium(cond_content, "📋 Columna Base (Premium)",
+                                    self.freemium_manager.verificar_licencia())
+        sec7.pack(fill='x', padx=20, pady=10)
+        
+        if not self.freemium_manager.verificar_licencia():
+            ttk.Label(sec7, text="⭐ Opción Premium - Define signos fijos",
+                     style='Modern.TLabel', foreground=COLOR_WARNING,
+                     font=('Segoe UI', 10, 'bold')).pack(pady=10)
+        else:
+            ttk.Label(sec7, text="Columna base:", style='Modern.TLabel').pack(side='left', padx=10)
+            self.columna_base_entry = ttk.Entry(sec7, width=20)
+            self.columna_base_entry.pack(side='left', padx=5)
+            ttk.Label(sec7, text="(ej: 1X21X...)", style='Modern.TLabel',
+                     font=('Segoe UI', 8, 'italic')).pack(side='left', padx=5)
+        
+        # Sección 8: Rangos (PREMIUM)
+        sec8 = crear_seccion_premium(cond_content, "📈 Rangos (Premium)",
+                                    self.freemium_manager.verificar_licencia())
+        sec8.pack(fill='x', padx=20, pady=10)
+        
+        if not self.freemium_manager.verificar_licencia():
+            ttk.Label(sec8, text="⭐ Opción Premium - Define rangos de valores",
+                     style='Modern.TLabel', foreground=COLOR_WARNING,
+                     font=('Segoe UI', 10, 'bold')).pack(pady=10)
+        else:
+            ttk.Label(sec8, text="Tipo:", style='Modern.TLabel').pack(side='left', padx=10)
+            self.rango_tipo = ttk.Combobox(sec8, values=['Suma Goles', 'Puntos'], width=15, state='readonly')
+            self.rango_tipo.current(0)
+            self.rango_tipo.pack(side='left', padx=5)
+            ttk.Label(sec8, text="Min:", style='Modern.TLabel').pack(side='left', padx=5)
+            self.rango_min = ttk.Spinbox(sec8, from_=0, to=100, width=8)
+            self.rango_min.set(0)
+            self.rango_min.pack(side='left', padx=2)
+            ttk.Label(sec8, text="Max:", style='Modern.TLabel').pack(side='left', padx=5)
+            self.rango_max = ttk.Spinbox(sec8, from_=0, to=100, width=8)
+            self.rango_max.set(100)
+            self.rango_max.pack(side='left', padx=2)
+        
+        # Sección 9: Figuras (PREMIUM)
+        sec9 = crear_seccion_premium(cond_content, "🔷 Figuras (Premium)",
+                                    self.freemium_manager.verificar_licencia())
+        sec9.pack(fill='x', padx=20, pady=10)
+        
+        if not self.freemium_manager.verificar_licencia():
+            ttk.Label(sec9, text="⭐ Opción Premium - Valida patrones específicos",
+                     style='Modern.TLabel', foreground=COLOR_WARNING,
+                     font=('Segoe UI', 10, 'bold')).pack(pady=10)
+        else:
+            ModernButton(sec9, "➕ Añadir Figura",
+                        command=lambda: self._añadir_figura(),
+                        bg=COLOR_ACCENT, width=200).pack(pady=5)
+        
+        # Sección 10: Diferencias (PREMIUM)
+        sec10 = crear_seccion_premium(cond_content, "⚖️ Diferencias (Premium)",
+                                     self.freemium_manager.verificar_licencia())
+        sec10.pack(fill='x', padx=20, pady=10)
+        
+        if not self.freemium_manager.verificar_licencia():
+            ttk.Label(sec10, text="⭐ Opción Premium - Controla diferencias entre signos",
+                     style='Modern.TLabel', foreground=COLOR_WARNING,
+                     font=('Segoe UI', 10, 'bold')).pack(pady=10)
+        else:
+            ttk.Label(sec10, text="Tipo:", style='Modern.TLabel').pack(side='left', padx=10)
+            self.diferencia_tipo = ttk.Combobox(sec10, values=['1 vs 2', '1 vs X', '2 vs X'], width=12, state='readonly')
+            self.diferencia_tipo.current(0)
+            self.diferencia_tipo.pack(side='left', padx=5)
+            ttk.Label(sec10, text="Min:", style='Modern.TLabel').pack(side='left', padx=5)
+            self.diferencia_min = ttk.Spinbox(sec10, from_=-14, to=14, width=8)
+            self.diferencia_min.set(-2)
+            self.diferencia_min.pack(side='left', padx=2)
+            ttk.Label(sec10, text="Max:", style='Modern.TLabel').pack(side='left', padx=5)
+            self.diferencia_max = ttk.Spinbox(sec10, from_=-14, to=14, width=8)
+            self.diferencia_max.set(2)
+            self.diferencia_max.pack(side='left', padx=2)
+        
+        # Sección 11: Secuencias (PREMIUM)
+        sec11 = crear_seccion_premium(cond_content, "🔗 Secuencias (Premium)",
+                                     self.freemium_manager.verificar_licencia())
+        sec11.pack(fill='x', padx=20, pady=10)
+        
+        if not self.freemium_manager.verificar_licencia():
+            ttk.Label(sec11, text="⭐ Opción Premium - Valida secuencias de signos",
+                     style='Modern.TLabel', foreground=COLOR_WARNING,
+                     font=('Segoe UI', 10, 'bold')).pack(pady=10)
+        else:
+            ModernButton(sec11, "➕ Añadir Secuencia",
+                        command=lambda: self._añadir_secuencia(),
+                        bg=COLOR_ACCENT, width=200).pack(pady=5)
+        
+        # Sección 12: Módulos (PREMIUM)
+        sec12 = crear_seccion_premium(cond_content, "🧩 Módulos (Premium)",
+                                     self.freemium_manager.verificar_licencia())
+        sec12.pack(fill='x', padx=20, pady=10)
+        
+        if not self.freemium_manager.verificar_licencia():
+            ttk.Label(sec12, text="⭐ Opción Premium - Agrupa partidos en módulos",
+                     style='Modern.TLabel', foreground=COLOR_WARNING,
+                     font=('Segoe UI', 10, 'bold')).pack(pady=10)
+        else:
+            ModernButton(sec12, "➕ Crear Módulo",
+                        command=lambda: self._crear_modulo(),
+                        bg=COLOR_ACCENT, width=200).pack(pady=5)
+        
+        # Sección 13: Comparador (PREMIUM)
+        sec13 = crear_seccion_premium(cond_content, "🔍 Comparador (Premium)",
+                                     self.freemium_manager.verificar_licencia())
+        sec13.pack(fill='x', padx=20, pady=10)
+        
+        if not self.freemium_manager.verificar_licencia():
+            ttk.Label(sec13, text="⭐ Opción Premium - Compara con quinielas históricas",
+                     style='Modern.TLabel', foreground=COLOR_WARNING,
+                     font=('Segoe UI', 10, 'bold')).pack(pady=10)
+        else:
+            ttk.Label(sec13, text="Comparar con:", style='Modern.TLabel').pack(side='left', padx=10)
+            self.comparador_tipo = ttk.Combobox(sec13, values=['Quinielas ganadoras', 'Últimas jornadas'], width=20, state='readonly')
+            self.comparador_tipo.current(0)
+            self.comparador_tipo.pack(side='left', padx=5)
+        
+        # Sección 14: If-Then (PREMIUM)
+        sec14 = crear_seccion_premium(cond_content, "🔀 If-Then (Premium)",
+                                     self.freemium_manager.verificar_licencia())
+        sec14.pack(fill='x', padx=20, pady=10)
+        
+        if not self.freemium_manager.verificar_licencia():
+            ttk.Label(sec14, text="⭐ Opción Premium - Reglas condicionales",
+                     style='Modern.TLabel', foreground=COLOR_WARNING,
+                     font=('Segoe UI', 10, 'bold')).pack(pady=10)
+        else:
+            ModernButton(sec14, "➕ Añadir Regla If-Then",
+                        command=lambda: self._añadir_if_then(),
+                        bg=COLOR_ACCENT, width=200).pack(pady=5)
+        
+        # Sección 15: Reservas (PREMIUM)
+        sec15 = crear_seccion_premium(cond_content, "🔒 Reservas (Premium)",
+                                     self.freemium_manager.verificar_licencia())
+        sec15.pack(fill='x', padx=20, pady=10)
+        
+        if not self.freemium_manager.verificar_licencia():
+            ttk.Label(sec15, text="⭐ Opción Premium - Fija signos en posiciones",
+                     style='Modern.TLabel', foreground=COLOR_WARNING,
+                     font=('Segoe UI', 10, 'bold')).pack(pady=10)
+        else:
+            ModernButton(sec15, "➕ Añadir Reserva",
+                        command=lambda: self._añadir_reserva(),
+                        bg=COLOR_ACCENT, width=200).pack(pady=5)
+        
+        # Sección 16: Capas (PREMIUM)
+        sec16 = crear_seccion_premium(cond_content, "📚 Capas (Premium)",
+                                     self.freemium_manager.verificar_licencia())
+        sec16.pack(fill='x', padx=20, pady=10)
+        
+        if not self.freemium_manager.verificar_licencia():
+            ttk.Label(sec16, text="⭐ Opción Premium - Múltiples niveles de validación",
+                     style='Modern.TLabel', foreground=COLOR_WARNING,
+                     font=('Segoe UI', 10, 'bold')).pack(pady=10)
+        else:
+            ModernButton(sec16, "➕ Crear Capa",
+                        command=lambda: self._crear_capa(),
+                        bg=COLOR_ACCENT, width=200).pack(pady=5)
+        
+        # Sección 17: Probabilidad por Grupos (PREMIUM)
+        sec17 = crear_seccion_premium(cond_content, "📊 Probabilidad por Grupos (Premium)",
+                                     self.freemium_manager.verificar_licencia())
+        sec17.pack(fill='x', padx=20, pady=10)
+        
+        if not self.freemium_manager.verificar_licencia():
+            ttk.Label(sec17, text="⭐ Opción Premium - Calcula probabilidades por grupos",
+                     style='Modern.TLabel', foreground=COLOR_WARNING,
+                     font=('Segoe UI', 10, 'bold')).pack(pady=10)
+        else:
+            self.usar_prob_grupos = tk.BooleanVar(value=False)
+            tk.Checkbutton(sec17, text="Activar probabilidad por grupos",
+                          variable=self.usar_prob_grupos,
+                          bg=COLOR_SURFACE, fg=COLOR_FG,
+                          selectcolor=COLOR_SURFACE).pack(pady=5)
+        
+        # Sección 18: Coeficiente de Rentabilidad (PREMIUM)
+        sec18 = crear_seccion_premium(cond_content, "💰 Coeficiente de Rentabilidad (Premium)",
+                                     self.freemium_manager.verificar_licencia())
+        sec18.pack(fill='x', padx=20, pady=10)
+        
+        if not self.freemium_manager.verificar_licencia():
+            ttk.Label(sec18, text="⭐ Opción Premium - Calcula rentabilidad esperada",
+                     style='Modern.TLabel', foreground=COLOR_WARNING,
+                     font=('Segoe UI', 10, 'bold')).pack(pady=10)
+        else:
+            ttk.Label(sec18, text="Coeficiente mínimo:", style='Modern.TLabel').pack(side='left', padx=10)
+            self.coef_rentabilidad_min = ttk.Spinbox(sec18, from_=0.0, to=100.0, width=10, format="%.2f")
+            self.coef_rentabilidad_min.set(1.0)
+            self.coef_rentabilidad_min.pack(side='left', padx=5)
+        
+        # Sección 19: Estabilizador de % (PREMIUM)
+        sec19 = crear_seccion_premium(cond_content, "⚖️ Estabilizador de % (Premium)",
+                                     self.freemium_manager.verificar_licencia())
+        sec19.pack(fill='x', padx=20, pady=10)
+        
+        if not self.freemium_manager.verificar_licencia():
+            ttk.Label(sec19, text="⭐ Opción Premium - Suaviza probabilidades extremas",
+                     style='Modern.TLabel', foreground=COLOR_WARNING,
+                     font=('Segoe UI', 10, 'bold')).pack(pady=10)
+        else:
+            ttk.Label(sec19, text="Factor:", style='Modern.TLabel').pack(side='left', padx=10)
+            self.factor_estabilizacion = ttk.Spinbox(sec19, from_=0.0, to=1.0, width=10, format="%.2f")
+            self.factor_estabilizacion.set(0.1)
+            self.factor_estabilizacion.pack(side='left', padx=5)
+            self.usar_estabilizador = tk.BooleanVar(value=False)
+            tk.Checkbutton(sec19, text="Activar estabilizador",
+                          variable=self.usar_estabilizador,
+                          bg=COLOR_SURFACE, fg=COLOR_FG,
+                          selectcolor=COLOR_SURFACE).pack(side='left', padx=10)
+        
+        # Sección 20: Probabilidad Apuestas (PREMIUM)
+        sec20 = crear_seccion_premium(cond_content, "🎲 Probabilidad Apuestas (Premium)",
+                                     self.freemium_manager.verificar_licencia())
+        sec20.pack(fill='x', padx=20, pady=10)
+        
+        if not self.freemium_manager.verificar_licencia():
+            ttk.Label(sec20, text="⭐ Opción Premium - Calcula probabilidad de cada apuesta",
+                     style='Modern.TLabel', foreground=COLOR_WARNING,
+                     font=('Segoe UI', 10, 'bold')).pack(pady=10)
+        else:
+            self.usar_prob_apuestas = tk.BooleanVar(value=False)
+            tk.Checkbutton(sec20, text="Activar cálculo de probabilidades",
+                          variable=self.usar_prob_apuestas,
+                          bg=COLOR_SURFACE, fg=COLOR_FG,
+                          selectcolor=COLOR_SURFACE).pack(pady=5)
+        
+        # Sección 21: Consultar Casas de Apuestas (PREMIUM)
+        sec21 = crear_seccion_premium(cond_content, "🏪 Consultar Casas de Apuestas (Premium)",
+                                     self.freemium_manager.verificar_licencia())
+        sec21.pack(fill='x', padx=20, pady=10)
+        
+        if not self.freemium_manager.verificar_licencia():
+            ttk.Label(sec21, text="⭐ Opción Premium - Obtiene cuotas de casas de apuestas",
+                     style='Modern.TLabel', foreground=COLOR_WARNING,
+                     font=('Segoe UI', 10, 'bold')).pack(pady=10)
+        else:
+            ModernButton(sec21, "🔄 Actualizar Cuotas",
+                        command=lambda: self._actualizar_cuotas_casas(),
+                        bg=COLOR_ACCENT, width=200).pack(pady=5)
+        
+        canvas_frame.pack(side='left', fill='both', expand=True, padx=20, pady=(0, 20))
+        scrollbar.pack(side='right', fill='y', pady=(0, 20))
+        
+        def on_configure(event):
+            canvas_frame.configure(scrollregion=canvas_frame.bbox('all'))
+        cond_content.bind('<Configure>', on_configure)
+        
+        # Botones de acción
         btn_frame = ttk.Frame(frame, style='Surface.TFrame')
-        btn_frame.pack(fill='x', padx=20, pady=20, after=title_frame)  # Después del título
+        btn_frame.pack(fill='x', padx=20, pady=(0, 20))
         
-        btn_subframe1 = ttk.Frame(btn_frame, style='Surface.TFrame')
-        btn_subframe1.pack(side='left', padx=10)
+        # Upsell premium en condiciones (con banner promocional si existe)
+        if not self.freemium_manager.verificar_licencia():
+            # Banner promocional
+            if hasattr(self, 'promocional_manager') and self.promocional_manager:
+                banner_cond = self.promocional_manager.crear_banner_premium(
+                    frame,
+                    callback=self.mostrar_opciones_premium
+                )
+                if banner_cond:
+                    banner_cond.pack(fill=tk.X, padx=20, pady=10)
+            
+            upsell_cond = ttk.Label(btn_frame,
+                                   text="⭐ Desbloquea condiciones avanzadas con Premium (20% OFF)",
+                                   font=('Segoe UI', 9, 'bold'),
+                                   foreground='#FF6B00',
+                                   cursor='hand2')
+            upsell_cond.pack(side='left', padx=5)
+            upsell_cond.bind('<Button-1>', lambda e: self.mostrar_opciones_premium())
         
-        ModernButton(btn_subframe1, "✅ Aplicar Condiciones",
+        ModernButton(btn_frame, "✅ Aplicar Condiciones",
                     command=self.aplicar_condiciones,
-                    bg=COLOR_SUCCESS, width=220, height=45).pack()
+                    bg=COLOR_SUCCESS, width=250, height=45).pack(side='left', padx=10)
         
-        btn_subframe2 = ttk.Frame(btn_frame, style='Surface.TFrame')
-        btn_subframe2.pack(side='left', padx=10)
+        ModernButton(btn_frame, "📊 Ir a Reducción",
+                    command=lambda: self.notebook.select(3),  # Índice de pestaña Reducción
+                    bg=COLOR_ACCENT, width=250, height=45).pack(side='left', padx=10)
+    
+    def create_reduccion_tab(self):
+        """Pestaña de reducción - Solo reducción, sin condiciones"""
+        frame = ttk.Frame(self.notebook, style='Modern.TFrame')
+        self.notebook.add(frame, text='📊 Reducción')
+        
+        # Título
+        title_frame = ttk.Frame(frame, style='Surface.TFrame')
+        title_frame.pack(fill='x', padx=20, pady=20)
+        ttk.Label(title_frame, text="Sistema de Reducción Inteligente",
+                 font=('Segoe UI', 18, 'bold'),
+                 style='Modern.TLabel').pack(pady=10)
+        
+        info_label = ttk.Label(title_frame, 
+                              text="Aplica las condiciones configuradas en la pestaña 'Condiciones' y reduce la quiniela",
+                              style='Modern.TLabel',
+                              font=('Segoe UI', 10, 'italic'))
+        info_label.pack(pady=(0, 10))
+        
+        # Layout: Controles arriba, resultados abajo
+        main_frame = ttk.Frame(frame, style='Surface.TFrame')
+        main_frame.pack(fill='both', expand=True, padx=20, pady=(0, 20))
+        
+        # Controles de reducción
+        controls_frame = ttk.Frame(main_frame, style='Surface.TFrame')
+        controls_frame.pack(fill='x', pady=(0, 20))
         
         # Reducción objetivo
-        obj_frame = ttk.Frame(btn_subframe2, style='Surface.TFrame')
-        obj_frame.pack(pady=2)
+        obj_frame = ttk.Frame(controls_frame, style='Surface.TFrame')
+        obj_frame.pack(pady=10)
         ttk.Label(obj_frame, text="Reducir al:", style='Modern.TLabel',
-                 font=('Segoe UI', 11, 'bold')).pack(side='left', padx=5)
+                 font=('Segoe UI', 14, 'bold')).pack(side='left', padx=10)
         self.objetivo_reduccion = ttk.Combobox(obj_frame, width=10, state='readonly',
-                                              font=('Segoe UI', 11))
+                                              font=('Segoe UI', 12))
         self.objetivo_reduccion['values'] = ['13', '12', '11']
         self.objetivo_reduccion.current(0)  # 13 por defecto
-        self.objetivo_reduccion.pack(side='left', padx=5)
+        self.objetivo_reduccion.pack(side='left', padx=10)
         
-        ModernButton(btn_subframe2, "📊 Aplicar Reducción",
+        # Botones de acción
+        btn_frame = ttk.Frame(controls_frame, style='Surface.TFrame')
+        btn_frame.pack(pady=10)
+        
+        ModernButton(btn_frame, "📊 Aplicar Reducción",
                     command=self.aplicar_reduccion,
-                    bg=COLOR_ACCENT, width=220, height=45).pack()
+                    bg=COLOR_ACCENT, width=250, height=50).pack(side='left', padx=10)
         
-        ModernButton(btn_subframe2, "💾 Guardar Quiniela",
+        ModernButton(btn_frame, "💾 Guardar Quiniela",
                     command=self.guardar_quiniela_actual,
-                    bg=COLOR_SUCCESS, width=220, height=45).pack(pady=(10, 0))
+                    bg=COLOR_SUCCESS, width=250, height=50).pack(side='left', padx=10)
         
-        canvas_cond.pack(side='left', fill='both', expand=True)
-        scrollbar_cond.pack(side='right', fill='y')
+        # Panel de resultados
+        results_frame = ttk.Frame(main_frame, style='Surface.TFrame')
+        results_frame.pack(fill='both', expand=True)
         
-        # Panel derecho: Resultados
-        right_panel = ttk.Frame(main_split, style='Surface.TFrame')
-        right_panel.pack(side='left', fill='both', expand=True)
-        
-        ttk.Label(right_panel, text="Columnas Resultantes:",
+        ttk.Label(results_frame, text="Columnas Resultantes:",
                  font=('Segoe UI', 14, 'bold'),
                  style='Modern.TLabel').pack(anchor='w', pady=(0, 10))
         
-        text_frame = ttk.Frame(right_panel, style='Surface.TFrame')
+        text_frame = ttk.Frame(results_frame, style='Surface.TFrame')
         text_frame.pack(fill='both', expand=True)
         
         self.result_text = tk.Text(text_frame, bg=COLOR_SURFACE, fg=COLOR_FG,
@@ -682,11 +1094,6 @@ class QuinielaModernaApp:
         self.result_text.pack(side='left', fill='both', expand=True)
         scrollbar_text.pack(side='right', fill='y')
         scrollbar_h_text.pack(side='bottom', fill='x')
-        
-        # Configurar canvas scroll
-        def on_cond_configure(event):
-            canvas_cond.configure(scrollregion=canvas_cond.bbox('all'))
-        cond_frame.bind('<Configure>', on_cond_configure)
     
     def create_analisis_tab(self):
         """Pestaña de análisis - Comparar quinielas con resultados"""
@@ -728,15 +1135,7 @@ class QuinielaModernaApp:
         
         ModernButton(row2, "📂 Cargar Quiniela Guardada",
                     command=self.cargar_quiniela_guardada,
-                    bg=COLOR_ACCENT, width=200).pack(side='left', padx=5)
-        
-        ModernButton(row2, "🔄 Cargar Resultados",
-                    command=self.cargar_resultados_analisis,
-                    bg=COLOR_WARNING, width=200).pack(side='left', padx=5)
-        
-        ModernButton(row2, "📊 Comparar",
-                    command=self.comparar_quiniela_resultados,
-                    bg="#9333ea", width=200).pack(side='left', padx=5)
+                    bg=COLOR_ACCENT, width=250).pack(side='left', padx=5)
         
         # Contenido dividido: simulación (izquierda) y comparación (derecha)
         content_split = ttk.Frame(frame, style='Surface.TFrame')
@@ -856,6 +1255,35 @@ class QuinielaModernaApp:
         ModernButton(btn_frame, "⭐ Obtener BBDD Histórica",
                     command=lambda: self._abrir_compra_bbdd(),
                     bg=COLOR_WARNING, width=250).pack(side='left', padx=5)
+        
+        # Sección de consultas avanzadas
+        consultas_frame = ttk.LabelFrame(frame, text="📊 Consultas Avanzadas", style='Surface.TFrame')
+        consultas_frame.pack(fill='x', padx=20, pady=(0, 10))
+        
+        consultas_content = ttk.Frame(consultas_frame, style='Surface.TFrame')
+        consultas_content.pack(padx=15, pady=10, fill='x')
+        
+        ttk.Label(consultas_content, text="Descubre estadísticas históricas:",
+                 style='Modern.TLabel', font=('Segoe UI', 10, 'bold')).pack(anchor='w', pady=(0, 5))
+        
+        consultas_btn_frame = ttk.Frame(consultas_content, style='Surface.TFrame')
+        consultas_btn_frame.pack(fill='x')
+        
+        ModernButton(consultas_btn_frame, "⚽ Más Goles",
+                    command=lambda: self._mostrar_consulta_avanzada('goles'),
+                    bg=COLOR_ACCENT, width=150).pack(side='left', padx=3)
+        
+        ModernButton(consultas_btn_frame, "🏠 Más Victorias Casa",
+                    command=lambda: self._mostrar_consulta_avanzada('victorias_casa'),
+                    bg=COLOR_SUCCESS, width=180).pack(side='left', padx=3)
+        
+        ModernButton(consultas_btn_frame, "✈️ Más Victorias Fuera",
+                    command=lambda: self._mostrar_consulta_avanzada('victorias_fuera'),
+                    bg="#10b981", width=180).pack(side='left', padx=3)
+        
+        ModernButton(consultas_btn_frame, "😢 Más Derrotas",
+                    command=lambda: self._mostrar_consulta_avanzada('derrotas'),
+                    bg=COLOR_ERROR, width=150).pack(side='left', padx=3)
         
         # Tabla de resultados históricos
         tree_frame = ttk.Frame(frame, style='Surface.TFrame')
@@ -989,6 +1417,92 @@ class QuinielaModernaApp:
             text=f"Mostrando {len(resultados)} partidos · Temporada {temporada} · Jornada {jornada}"
         )
     
+    def _mostrar_consulta_avanzada(self, tipo: str):
+        """Mostrar consulta avanzada en la tabla histórica"""
+        if not self.freemium_manager.tiene_bbdd_historica():
+            self._mostrar_dialogo_bbdd_promocion(force=True)
+            return
+        
+        try:
+            # Limpiar tabla
+            for item in self.historico_tree.get_children():
+                self.historico_tree.delete(item)
+            
+            # Cambiar columnas según el tipo de consulta
+            if tipo == 'goles':
+                self.historico_tree['columns'] = ('Pos', 'Equipo', 'Goles', 'Partidos')
+                for col in self.historico_tree['columns']:
+                    self.historico_tree.heading(col, text=col)
+                    width = 60 if col == 'Pos' else (250 if col == 'Equipo' else 120)
+                    self.historico_tree.column(col, width=width, anchor='center')
+                
+                resultados = self.db.get_top_teams_by_goals(limit=20)
+                for i, res in enumerate(resultados, 1):
+                    self.historico_tree.insert('', 'end', values=(
+                        i, res['equipo'], res['goles'], res['partidos']
+                    ))
+                self.historico_stats_label.config(
+                    text=f"⚽ Top 20 equipos con más goles históricamente"
+                )
+            
+            elif tipo == 'victorias_casa':
+                self.historico_tree['columns'] = ('Pos', 'Equipo', 'Victorias Casa')
+                for col in self.historico_tree['columns']:
+                    self.historico_tree.heading(col, text=col)
+                    width = 60 if col == 'Pos' else (300 if col == 'Equipo' else 150)
+                    self.historico_tree.column(col, width=width, anchor='center')
+                
+                resultados = self.db.get_top_teams_by_home_wins(limit=20)
+                for i, res in enumerate(resultados, 1):
+                    self.historico_tree.insert('', 'end', values=(
+                        i, res['equipo'], res['victorias_casa']
+                    ))
+                self.historico_stats_label.config(
+                    text=f"🏠 Top 20 equipos con más victorias en casa"
+                )
+            
+            elif tipo == 'victorias_fuera':
+                self.historico_tree['columns'] = ('Pos', 'Equipo', 'Victorias Fuera')
+                for col in self.historico_tree['columns']:
+                    self.historico_tree.heading(col, text=col)
+                    width = 60 if col == 'Pos' else (300 if col == 'Equipo' else 150)
+                    self.historico_tree.column(col, width=width, anchor='center')
+                
+                resultados = self.db.get_top_teams_by_away_wins(limit=20)
+                for i, res in enumerate(resultados, 1):
+                    self.historico_tree.insert('', 'end', values=(
+                        i, res['equipo'], res['victorias_fuera']
+                    ))
+                self.historico_stats_label.config(
+                    text=f"✈️ Top 20 equipos con más victorias fuera de casa"
+                )
+            
+            elif tipo == 'derrotas':
+                self.historico_tree['columns'] = ('Pos', 'Equipo', 'Derrotas')
+                for col in self.historico_tree['columns']:
+                    self.historico_tree.heading(col, text=col)
+                    width = 60 if col == 'Pos' else (300 if col == 'Equipo' else 150)
+                    self.historico_tree.column(col, width=width, anchor='center')
+                
+                resultados = self.db.get_top_teams_by_losses(limit=20)
+                for i, res in enumerate(resultados, 1):
+                    self.historico_tree.insert('', 'end', values=(
+                        i, res['equipo'], res['derrotas']
+                    ))
+                self.historico_stats_label.config(
+                    text=f"😢 Top 20 equipos con más derrotas históricamente"
+                )
+            
+        except Exception as e:
+            logger.error(f"Error en consulta avanzada {tipo}: {e}", exc_info=True)
+            messagebox.showerror("Error", f"Error ejecutando consulta: {e}")
+            # Restaurar columnas originales
+            self.historico_tree['columns'] = ('Partido', 'Local', 'Visitante', 'Resultado', 'Signo')
+            for col in self.historico_tree['columns']:
+                width = 80 if col == 'Partido' else (200 if col in ['Local', 'Visitante'] else 140)
+                self.historico_tree.heading(col, text=col)
+                self.historico_tree.column(col, width=width, anchor='center')
+    
     # ========== MÉTODOS FUNCIONALES (de interfaz_v3.py) ==========
     
     def crear_tablas(self):
@@ -1092,35 +1606,72 @@ class QuinielaModernaApp:
             return []
     
     def cargar_jornada(self):
-        """Cargar jornada desde BD"""
+        """Cargar jornada desde BD - Solo los 15 partidos de la quiniela"""
         temporada = self.temporada_combo.get()
         jornada = int(self.jornada_spin.get())
-        division_str = self.division_combo.get()
-        division = 1 if division_str == 'Primera' else 2
-        table = 'primera_division' if division == 1 else 'segunda_division'
         
+        # Verificar si es jornada actual o histórica
+        from datetime import datetime
         try:
+            # Intentar cargar desde jornada_actual primero (quiniela oficial)
             with sqlite3.connect(DB_PATH) as conn:
                 cur = conn.cursor()
-                cur.execute(f"SELECT * FROM {table} WHERE temporada=? AND jornada=?", 
-                          (temporada, jornada))
-                partidos = cur.fetchall()
+                cur.execute('''
+                    SELECT partido_numero, local, visitante, fecha
+                    FROM jornada_actual
+                    WHERE temporada = ? AND jornada = ?
+                    ORDER BY partido_numero
+                ''', (temporada, jornada))
+                partidos_quiniela = cur.fetchall()
             
             # Limpiar tabla
             for item in self.tree.get_children():
                 self.tree.delete(item)
             
-            # Mostrar partidos
-            if partidos:
-                for i, p in enumerate(partidos, 1):
+            if partidos_quiniela:
+                # Cargar desde jornada_actual (quiniela oficial)
+                for p in partidos_quiniela:
+                    num, local, visitante, fecha = p
                     self.tree.insert('', 'end', values=(
-                        i, p[3], p[4], '-', '-', '-', p[7]
+                        num, local, visitante, '-', '-', '-', ''
                     ))
-                messagebox.showinfo("Éxito", f"✅ Cargados {len(partidos)} partidos")
+                messagebox.showinfo("Éxito", f"✅ Cargados {len(partidos_quiniela)} partidos de la quiniela")
             else:
-                messagebox.showwarning("Sin datos", 
-                    "No hay datos en BD.\nUsa 'Actualizar desde Web'")
+                # Si no hay en jornada_actual, verificar si es jornada histórica
+                if not self.freemium_manager.tiene_bbdd_historica():
+                    messagebox.showinfo(
+                        "BBDD Histórica requerida",
+                        "Para consultar jornadas pasadas necesitas la base de datos histórica.\n\n"
+                        "Opción exclusiva para usuarios con BBDD histórica instalada.\n"
+                        "Descarga más de 100 años de resultados por solo 5,99€ para desbloquear todo el análisis histórico."
+                    )
+                    self._mostrar_dialogo_bbdd_promocion(force=True)
+                    return
+                
+                # Intentar cargar desde primera_division (histórico)
+                with sqlite3.connect(DB_PATH) as conn:
+                    cur = conn.cursor()
+                    cur.execute('''
+                        SELECT DISTINCT local, visitante, fecha, quiniela
+                        FROM primera_division
+                        WHERE temporada = ? AND jornada = ?
+                        LIMIT 15
+                    ''', (temporada, jornada))
+                    partidos_historico = cur.fetchall()
+                
+                if partidos_historico:
+                    for i, p in enumerate(partidos_historico, 1):
+                        local, visitante, fecha, quiniela = p
+                        self.tree.insert('', 'end', values=(
+                            i, local, visitante, '-', '-', '-', quiniela if quiniela else ''
+                        ))
+                    messagebox.showinfo("Éxito", f"✅ Cargados {len(partidos_historico)} partidos históricos")
+                else:
+                    messagebox.showwarning("Sin datos", 
+                        f"No hay datos para la temporada {temporada}, jornada {jornada}.\n\n"
+                        "Usa 'Crear Quiniela Jornada Actual' para descargar la quiniela de la semana actual.")
         except Exception as e:
+            logger.error(f"Error cargando jornada: {e}", exc_info=True)
             messagebox.showerror("Error", f"Error cargando: {e}")
     
     def actualizar_web(self):
@@ -1134,45 +1685,9 @@ class QuinielaModernaApp:
         )
     
     def _actualizar_web_real(self):
-        """Método real que actualiza desde web (scraping)"""
-        temporada = self.temporada_combo.get()
-        jornada = int(self.jornada_spin.get())
-        division_str = self.division_combo.get()
-        division = 1 if division_str == 'Primera' else 2
-        
-        def actualizar_thread():
-            try:
-                partidos = self.scrape_jornada(temporada, jornada, division)
-                
-                if partidos:
-                    # Guardar en BD
-                    table = 'primera_division' if division == 1 else 'segunda_division'
-                    with sqlite3.connect(DB_PATH) as conn:
-                        for p in partidos:
-                            conn.execute(f'''
-                                INSERT INTO {table} (temporada, jornada, fecha, local, visitante, 
-                                                    goles_local, goles_visitante, quiniela)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                                ON CONFLICT(temporada, jornada, local, visitante) DO UPDATE SET
-                                    fecha=excluded.fecha,
-                                    goles_local=excluded.goles_local,
-                                    goles_visitante=excluded.goles_visitante,
-                                    quiniela=excluded.quiniela
-                            ''', (p['temporada'], p['jornada'], p['fecha'], p['local'], 
-                                 p['visitante'], p['goles_local'], p['goles_visitante'], p['quiniela']))
-                        conn.commit()
-                    
-                    # Recargar
-                    self.root.after(0, self.cargar_jornada)
-                    self.root.after(0, lambda: messagebox.showinfo("Éxito", 
-                        f"✅ Actualizados {len(partidos)} partidos"))
-                else:
-                    self.root.after(0, lambda: messagebox.showwarning("Sin datos",
-                        "No se encontraron partidos"))
-            except Exception as e:
-                self.root.after(0, lambda: messagebox.showerror("Error", f"Error: {e}"))
-        
-        threading.Thread(target=actualizar_thread, daemon=True).start()
+        """Método real que actualiza desde web (scraping) - DEPRECADO: usar cargar_quiniela_oficial"""
+        # Redirigir a cargar_quiniela_oficial
+        self.cargar_quiniela_oficial()
     
     def calcular_pronosticos(self):
         """Calcular probabilidades (1, X, 2) para cada partido (control freemium)"""
@@ -2680,9 +3195,22 @@ class QuinielaModernaApp:
                     idx = seleccion[0]
                     self.quiniela_guardada = quinielas[idx]
                     dialog.destroy()
-                    messagebox.showinfo("Éxito", 
-                        f"✅ Quiniela cargada:\nTemporada: {self.quiniela_guardada.get('temporada')}\nJornada: {self.quiniela_guardada.get('jornada')}")
+                    # Actualizar temporada y jornada en los combos
+                    temporada = self.quiniela_guardada.get('temporada', '2025-26')
+                    jornada = self.quiniela_guardada.get('jornada', 1)
+                    
+                    # Actualizar combos
+                    if temporada in self.analisis_temporada['values']:
+                        self.analisis_temporada.set(temporada)
+                    if isinstance(jornada, int) and 1 <= jornada <= 70:
+                        self.analisis_jornada.set(jornada)
+                    
+                    # Mostrar quiniela y cargar resultados automáticamente
                     self.mostrar_quiniela_simulada(self.quiniela_guardada)
+                    # Cargar resultados automáticamente
+                    self._cargar_resultados_analisis_real(auto=True)
+                    # Comparar automáticamente
+                    self._comparar_quiniela_resultados_real()
                 else:
                     messagebox.showwarning("Advertencia", "Selecciona una quiniela")
             
@@ -2712,263 +3240,115 @@ class QuinielaModernaApp:
         )
     
     def _cargar_resultados_analisis_real(self, auto: bool = False):
-        """Método real que carga los resultados"""
+        """Método real que carga los resultados - SOLO los 15 partidos de la quiniela oficial"""
         try:
             temporada = self.analisis_temporada.get()
             jornada = int(self.analisis_jornada.get())
             
-            # Cargar desde BD - PRIMERO buscar en jornada_actual (los 15 partidos de la quiniela)
+            resultados = []
+            
+            # Cargar desde jornada_actual (los 15 partidos de la quiniela oficial)
             with sqlite3.connect(DB_PATH) as conn:
                 cur = conn.cursor()
                 
-                # Verificar si existe la tabla jornada_actual
-                cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='jornada_actual'")
-                tabla_existe = cur.fetchone()
+                # Buscar los 15 partidos en jornada_actual
+                cur.execute('''
+                    SELECT partido_numero, local, visitante
+                    FROM jornada_actual
+                    WHERE temporada = ? AND jornada = ?
+                    ORDER BY partido_numero
+                ''', (temporada, jornada))
                 
-                resultados = []
+                partidos_jornada = cur.fetchall()
                 
-                if tabla_existe:
-                    # Buscar en jornada_actual (tiene los 15 partidos de la quiniela) - solo equipos
+                if not partidos_jornada:
+                    if not auto:
+                        messagebox.showwarning("Sin datos", 
+                            f"No hay partidos cargados para {temporada} jornada {jornada}.\n"
+                            "Usa 'Crear Quiniela Jornada Actual' en la pestaña Jornada para descargar los partidos.")
+                    return
+                
+                logger.info(f"Encontrados {len(partidos_jornada)} partidos en jornada_actual")
+                
+                # Para cada partido, buscar su resultado real
+                for partido in partidos_jornada:
+                    num = partido[0]
+                    local = partido[1] or ''
+                    visitante = partido[2] or ''
+                    
+                    if not local or not visitante:
+                        continue
+                    
+                    goles_local = None
+                    goles_visitante = None
+                    quiniela = None
+                    
+                    # Buscar resultados en resultados_en_vivo primero
                     cur.execute('''
-                        SELECT partido_numero, local, visitante
-                        FROM jornada_actual
-                        WHERE temporada = ? AND jornada = ?
-                        ORDER BY partido_numero
-                    ''', (temporada, jornada))
+                        SELECT goles_local, goles_visitante
+                        FROM resultados_en_vivo
+                        WHERE temporada = ? AND jornada = ? AND partido_numero = ?
+                        LIMIT 1
+                    ''', (temporada, jornada, num))
                     
-                    partidos_jornada = cur.fetchall()
+                    res_vivo = cur.fetchone()
                     
-                    # IMPORTANTE: Cargar TODOS los partidos (con o sin resultados)
-                    # No filtrar por si tienen resultados, incluir todos los 15
-                    if partidos_jornada:
-                        logger.info(f"Encontrados {len(partidos_jornada)} partidos en jornada_actual")
-                        
-                        # Buscar resultados en resultados_en_vivo o tablas históricas
-                        for partido in partidos_jornada:
-                            num = partido[0] if partido[0] else 0
-                            local = partido[1] if partido[1] else ''
-                            visitante = partido[2] if partido[2] else ''
-                            
-                            if not local or not visitante:
-                                logger.warning(f"Partido {num} sin equipos: local={local}, visitante={visitante}")
-                                continue
-                            
-                            goles_local = None
-                            goles_visitante = None
-                            quiniela = None
-                            
-                            # Buscar resultados en resultados_en_vivo primero
-                            cur.execute('''
-                                SELECT goles_local, goles_visitante
-                                FROM resultados_en_vivo
-                                WHERE temporada = ? AND jornada = ? AND partido_numero = ?
-                                LIMIT 1
-                            ''', (temporada, jornada, num))
-                            
-                            res_vivo = cur.fetchone()
-                            
-                            if res_vivo and res_vivo[0] is not None and res_vivo[1] is not None:
-                                # Tenemos resultados en vivo
-                                goles_local = res_vivo[0]
-                                goles_visitante = res_vivo[1]
-                                
-                                # Calcular quiniela
-                                if goles_local > goles_visitante:
-                                    quiniela = '1'
-                                elif goles_local == goles_visitante:
-                                    quiniela = 'X'
-                                else:
-                                    quiniela = '2'
-                                
-                                logger.debug(f"Partido {num}: resultados encontrados en resultados_en_vivo")
-                            else:
-                                # Buscar en tablas históricas por nombre de equipos
-                                cur.execute('''
-                                    SELECT goles_local, goles_visitante, quiniela
-                                    FROM primera_division
-                                    WHERE temporada = ? AND jornada = ? AND local = ? AND visitante = ?
-                                    LIMIT 1
-                                ''', (temporada, jornada, local, visitante))
-                                
-                                res_hist = cur.fetchone()
-                                
-                                if not res_hist:
-                                    cur.execute('''
-                                        SELECT goles_local, goles_visitante, quiniela
-                                        FROM segunda_division
-                                        WHERE temporada = ? AND jornada = ? AND local = ? AND visitante = ?
-                                        LIMIT 1
-                                    ''', (temporada, jornada, local, visitante))
-                                    res_hist = cur.fetchone()
-                                
-                                if res_hist:
-                                    goles_local = res_hist[0]
-                                    goles_visitante = res_hist[1]
-                                    quiniela = res_hist[2]
-                                    logger.debug(f"Partido {num}: resultados encontrados en tablas históricas")
-                            
-                            # IMPORTANTE: Agregar TODOS los partidos, incluso si no tienen resultados
-                            resultados.append((
-                                num,  # partido_numero
-                                local,  # local
-                                visitante,  # visitante
-                                goles_local,  # goles_local (puede ser None)
-                                goles_visitante,  # goles_visitante (puede ser None)
-                                quiniela  # quiniela (puede ser None)
-                            ))
-                        
-                        logger.info(f"Cargados {len(resultados)} partidos de jornada_actual (incluyendo pendientes)")
-                
-                # Si no hay 15 partidos en jornada_actual, intentar completar desde otras fuentes
-                if len(resultados) < 15:
-                    logger.warning(f"Solo {len(resultados)} partidos cargados de jornada_actual, esperados 15")
-                    
-                    # Obtener números de partidos ya cargados
-                    numeros_cargados = {r[0] for r in resultados}
-                    
-                    # Buscar partidos faltantes (1-15)
-                    for num in range(1, 16):
-                        if num in numeros_cargados:
-                            continue  # Ya está cargado
-                        
-                        # Buscar en tablas históricas para completar
-                        # Primero intentar encontrar por número de partido en resultados_en_vivo
-                        cur.execute('''
-                            SELECT partido_numero, local, visitante, goles_local, goles_visitante
-                            FROM resultados_en_vivo
-                            WHERE temporada = ? AND jornada = ? AND partido_numero = ?
-                            LIMIT 1
-                        ''', (temporada, jornada, num))
-                        
-                        res_vivo = cur.fetchone()
-                        
-                        if res_vivo:
-                            local = res_vivo[1] or ''
-                            visitante = res_vivo[2] or ''
-                            goles_local = res_vivo[3]
-                            goles_visitante = res_vivo[4]
-                            
-                            if goles_local is not None and goles_visitante is not None:
-                                if goles_local > goles_visitante:
-                                    quiniela = '1'
-                                elif goles_local == goles_visitante:
-                                    quiniela = 'X'
-                                else:
-                                    quiniela = '2'
-                            else:
-                                quiniela = None
-                            
-                            resultados.append((
-                                num,
-                                local,
-                                visitante,
-                                goles_local,
-                                goles_visitante,
-                                quiniela
-                            ))
-                            logger.info(f"Partido {num} cargado desde resultados_en_vivo")
+                    if res_vivo and res_vivo[0] is not None and res_vivo[1] is not None:
+                        goles_local = res_vivo[0]
+                        goles_visitante = res_vivo[1]
+                        if goles_local > goles_visitante:
+                            quiniela = '1'
+                        elif goles_local == goles_visitante:
+                            quiniela = 'X'
                         else:
-                            # Si no está en resultados_en_vivo, buscar en jornada_actual sin resultados
+                            quiniela = '2'
+                    else:
+                        # Buscar en tablas históricas
+                        cur.execute('''
+                            SELECT goles_local, goles_visitante, quiniela
+                            FROM primera_division
+                            WHERE temporada = ? AND jornada = ? AND local = ? AND visitante = ?
+                            LIMIT 1
+                        ''', (temporada, jornada, local, visitante))
+                        
+                        res_hist = cur.fetchone()
+                        
+                        if not res_hist:
                             cur.execute('''
-                                SELECT partido_numero, local, visitante
-                                FROM jornada_actual
-                                WHERE temporada = ? AND jornada = ? AND partido_numero = ?
+                                SELECT goles_local, goles_visitante, quiniela
+                                FROM segunda_division
+                                WHERE temporada = ? AND jornada = ? AND local = ? AND visitante = ?
                                 LIMIT 1
-                            ''', (temporada, jornada, num))
-                            
-                            partido_jornada = cur.fetchone()
-                            
-                            if partido_jornada:
-                                local = partido_jornada[1] or ''
-                                visitante = partido_jornada[2] or ''
-                                
-                                # Intentar buscar resultados en tablas históricas
-                                cur.execute('''
-                                    SELECT goles_local, goles_visitante, quiniela
-                                    FROM primera_division
-                                    WHERE temporada = ? AND jornada = ? AND local = ? AND visitante = ?
-                                    LIMIT 1
-                                ''', (temporada, jornada, local, visitante))
-                                
-                                res_hist = cur.fetchone()
-                                
-                                if not res_hist:
-                                    cur.execute('''
-                                        SELECT goles_local, goles_visitante, quiniela
-                                        FROM segunda_division
-                                        WHERE temporada = ? AND jornada = ? AND local = ? AND visitante = ?
-                                        LIMIT 1
-                                    ''', (temporada, jornada, local, visitante))
-                                    res_hist = cur.fetchone()
-                                
-                                if res_hist:
-                                    resultados.append((
-                                        num,
-                                        local,
-                                        visitante,
-                                        res_hist[0],
-                                        res_hist[1],
-                                        res_hist[2]
-                                    ))
-                                    logger.info(f"Partido {num} cargado desde tablas históricas")
-                                else:
-                                    # Partido pendiente (sin resultados)
-                                    resultados.append((
-                                        num,
-                                        local,
-                                        visitante,
-                                        None,
-                                        None,
-                                        None
-                                    ))
-                                    logger.info(f"Partido {num} agregado como pendiente (sin resultados)")
-                
-                # Si aún no hay resultados, intentar scraping
-                if not resultados:
-                    messagebox.showwarning("Advertencia", 
-                        f"No se encontraron resultados en BD para {temporada} jornada {jornada}\n"
-                        "Intentando scraping...")
+                            ''', (temporada, jornada, local, visitante))
+                            res_hist = cur.fetchone()
+                        
+                        if res_hist:
+                            goles_local = res_hist[0]
+                            goles_visitante = res_hist[1]
+                            quiniela = res_hist[2]
                     
-                    # Intentar scraping
-                    from src.scraper import Scraper
-                    scraper = Scraper()
-                    partidos = scraper.scrape_current_round_bdfutbol(temporada.split('-')[0], jornada, 1)
-                    
-                    if partidos:
-                        resultados = []
-                        for p in partidos:
-                            signo = p.get('quiniela', '')
-                            num = p.get('partido_numero', 0)
-                            if signo and num:
-                                resultados.append((
-                                    num,
-                                    p.get('local', ''),
-                                    p.get('visitante', ''),
-                                    p.get('goles_local', 0),
-                                    p.get('goles_visitante', 0),
-                                    signo
-                                ))
+                    # Agregar partido (con o sin resultados)
+                    resultados.append((
+                        num, local, visitante, goles_local, goles_visitante, quiniela
+                    ))
                 
-                # Limitar a 15 partidos máximo
-                if len(resultados) > 15:
-                    resultados = resultados[:15]
-                    logger.warning(f"Limitados los resultados a 15 partidos (había {len(resultados)})")
+                logger.info(f"Cargados {len(resultados)} partidos de jornada_actual")
                 
-                if resultados:
-                    self.resultados_analisis = resultados
-                    if not auto:
-                        messagebox.showinfo("Éxito", 
-                            f"✅ Resultados cargados:\n{len(resultados)} partidos encontrados (de 15 esperados)")
-                else:
-                    if not auto:
-                        messagebox.showwarning("Advertencia", 
-                            "No se encontraron resultados. La jornada puede no haber finalizado aún.")
-                self.mostrar_quiniela_simulada(self.quiniela_guardada)
-                    
+                if len(resultados) < 15:
+                    logger.warning(f"Solo {len(resultados)} partidos cargados, esperados 15")
+                
+                # Guardar resultados
+                self.resultados_analisis = resultados
+                
+                if not auto:
+                    messagebox.showinfo("Éxito", 
+                        f"✅ Cargados {len(resultados)} partidos\n"
+                        f"Resultados disponibles: {sum(1 for r in resultados if r[5])}")
+                
         except Exception as e:
+            logger.error(f"Error cargando resultados: {e}", exc_info=True)
             if not auto:
                 messagebox.showerror("Error", f"Error cargando resultados: {e}")
-            logger.error(f"Error cargando resultados: {e}", exc_info=True)
     
     def comparar_quiniela_resultados(self):
         """Comparar quiniela guardada con resultados reales"""
@@ -2981,14 +3361,12 @@ class QuinielaModernaApp:
         )
     
     def _comparar_quiniela_resultados_real(self):
-        """Método real que compara la quiniela"""
+        """Método real que compara la quiniela con resultados reales"""
         if not self.quiniela_guardada:
-            messagebox.showwarning("Advertencia", "Primero carga una quiniela guardada")
-            return
+            return  # No mostrar error si se llama automáticamente
         
         if not self.resultados_analisis:
-            messagebox.showwarning("Advertencia", "Primero carga los resultados")
-            return
+            return  # No mostrar error si se llama automáticamente
         
         try:
             # Limpiar tabla
@@ -3106,9 +3484,9 @@ class QuinielaModernaApp:
                             goles_visitante = r.get('goles_visitante')
                             
                             if goles_local is not None and goles_visitante is not None:
-                                resultado_real = f"{local} {goles_local}-{goles_visitante} {visitante} ({signo_real})"
+                                resultado_real = f"{signo_real} ({goles_local}-{goles_visitante})"
                             else:
-                                resultado_real = f"{local} vs {visitante} (Pendiente)"
+                                resultado_real = "Pendiente"
                             
                             # Acierto si el signo real está en los signos seleccionados
                             acierto = signo_real in signos if signos else False
@@ -3215,6 +3593,22 @@ class QuinielaModernaApp:
     
     def mostrar_opciones_premium(self):
         """Mostrar diálogo de opciones premium"""
+        # Si hay gestor promocional, mostrar popup VIP primero
+        if hasattr(self, 'promocional_manager') and self.promocional_manager and not self.freemium_manager.verificar_licencia():
+            try:
+                self.promocional_manager.crear_popup_vip(
+                    self.root,
+                    callback=self._abrir_dialogo_premium_completo
+                )
+                return
+            except Exception as e:
+                logger.warning(f"Error mostrando popup VIP: {e}")
+        
+        # Si no hay popup o falla, mostrar diálogo premium normal
+        self._abrir_dialogo_premium_completo()
+    
+    def _abrir_dialogo_premium_completo(self):
+        """Abrir diálogo premium completo"""
         from src.anuncios import PremiumDialog
         PremiumDialog(self.root, self.freemium_manager, callback=self.actualizar_indicador_premium)
     
@@ -3358,7 +3752,7 @@ class QuinielaModernaApp:
         
         comprar_btn = ModernButton(
             botones,
-            "📦 Descargar BBDD 5,99€",
+            "📦 Descargar BBDD 4,79€",
             command=lambda: self._abrir_compra_bbdd(dialog),
             bg=COLOR_ACCENT,
             width=220,
@@ -3387,11 +3781,45 @@ class QuinielaModernaApp:
         self.actualizar_indicador_premium()
         self.actualizar_estado_historico_tab()
         self.mostrar_quiniela_simulada(self.quiniela_guardada)
+    
+    def _verificar_actualizacion_inicio(self):
+        """Verificar actualización al iniciar (en segundo plano)"""
+        if not hasattr(self, 'update_manager') or not self.update_manager:
+            return
+        
+        try:
+            info_actualizacion = self.update_manager.verificar_actualizacion()
+            if info_actualizacion:
+                # Mostrar diálogo en hilo principal
+                self.root.after(2000, lambda: self.update_manager.mostrar_dialogo_actualizacion(
+                    self.root, info_actualizacion
+                ))
+        except Exception as e:
+            logger.debug(f"Error verificando actualización: {e}")
+    
+    def _mostrar_tooltip(self, event, texto):
+        """Mostrar tooltip temporal"""
+        tooltip = tk.Toplevel()
+        tooltip.wm_overrideredirect(True)
+        tooltip.wm_geometry(f"+{event.x_root+10}+{event.y_root+10}")
+        label = tk.Label(tooltip, text=texto, background="#ffffe0", 
+                        foreground="black", relief="solid", borderwidth=1,
+                        font=('Segoe UI', 9))
+        label.pack()
+        # Auto-cerrar después de 2 segundos
+        tooltip.after(2000, tooltip.destroy)
 
 def main():
-    root = tk.Tk()
-    app = QuinielaModernaApp(root)
-    root.mainloop()
+    try:
+        root = tk.Tk()
+        app = QuinielaModernaApp(root)
+        logger.info("Aplicación iniciada correctamente. Mostrando ventana principal...")
+        root.mainloop()
+    except Exception as e:
+        logger.error(f"Error al iniciar la aplicación: {e}", exc_info=True)
+        print(f"ERROR: No se pudo iniciar la aplicación: {e}")
+        print("Si estás en WSL, asegúrate de tener configurado un servidor X11 (XLaunch, VcXsrv, etc.)")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

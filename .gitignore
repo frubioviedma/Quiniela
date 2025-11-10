@@ -23,38 +23,70 @@ wheels/
 .installed.cfg
 *.egg
 
-# Base de datos - PRIVADA - NO SUBIR NUNCA
-*.db
-*.sqlite
-*.sqlite3
-historical.db
-*.db-journal
-*.db-wal
-*.db-shm
+# Virtual Environment
+env/
+venv/
+ENV/
+.venv
 
-# Cache HTML
-cache/
-*.html
-
-# Logs
-*.log
-
-# IDE
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS
-.DS_Store
-Thumbs.db
+# Logs
+*.log
+quiniela.log
+scraper.log
+
+# Database
+*.db
+*.db-journal
+historical.db
+historical.db-journal
+data/*.db
+
+# Cache
+cache/
+*.cache
+__pycache__/
+
+# Buildozer
+.buildozer/
+bin/
+*.apk
+*.aab
+
+# Assets (mantener estructura pero no archivos grandes)
+assets/*.png
+assets/*.jpg
+assets/*.wav
+assets/*.mp3
+!assets/README.md
+
+# Configuración sensible
+.env
+*.keystore
+*.jks
+config_local.py
 
 # Backup
 backup/
+*.bak
+*.backup
 
-# Temporal
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporales
 *.tmp
+*.temp
+tmp/
+temp/
 
-# Directorios duplicados
-Quiniela/
+# Quinielas guardadas (opcional - descomentar si no quieres versionar)
+# quinielas_guardadas.json

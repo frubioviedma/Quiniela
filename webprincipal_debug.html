@@ -1,0 +1,2728 @@
+<!DOCTYPE html>
+<html lang="es">
+ <head>
+  <title>
+   La quiniela. Calcula online apuestas quiniela futbol. Quiniela y sorteos
+  </title>
+  <meta content="La quiniela. Calcula online apuestas quiniela futbol. Quiniela y sorteos" name="title"/>
+  <meta content="quiniela futbol calcula online apuestas quinielas fútbol cubrir sellar quiniela sorteos," name="keywords"/>
+  <meta content="La quiniela de futbol español. Calcular online apuestas quiniela de fútbol. Calculas, cubrir y sellar la quiniela fútbol con apuestas probables." name="description"/>
+  <meta charset="utf-8"/>
+  <meta content="SFT - webprincipal.com" name="author"/>
+  <meta content="SFT - webprincipal.com" name="copyright"/>
+  <meta content="1 Days" name="REVISIT-AFTER"/>
+  <meta content="1 days" name="REVISIT"/>
+  <meta content="Index,Follow" name="ROBOT"/>
+  <meta content="all | index | follow" name="robots"/>
+  <meta content="index follow" name="GOOGLEBOT"/>
+  <meta content="Global" name="DISTRIBUTION"/>
+  <meta content="general" name="RATING"/>
+  <meta content="es" name="DC.language"/>
+  <meta content="es" name="lang"/>
+  <meta content="Quiniela" name="ABSTRACT"/>
+  <meta content="Sorteos" name="SUBJECT"/>
+  <meta content="width=device-width, initial-scale=1.0, minimum-scale=0.6" name="viewport"/>
+  <link href="../comunesscreen.css" media="screen" rel="stylesheet" type="text/css"/>
+  <link href="../comunesprinter.css" media="print" rel="stylesheet" type="text/css"/>
+  <link href="../js/bootstrap.min.css" media="screen" rel="stylesheet"/>
+  <link href="../js/jquery-ui.min.css" media="screen" rel="stylesheet"/>
+  <link href="../cookies.css" rel="stylesheet" type="text/css"/>
+  <link href="quiniela.css?v=1" rel="stylesheet" type="text/css"/>
+  <script src="../js/jquery-1.12.3.js">
+  </script>
+  <script src="../js/css3-mediaqueries.js">
+  </script>
+  <script src="../funciones.js">
+  </script>
+  <script src="../js/bootstrap.min.js">
+  </script>
+  <script src="../js/jquery-ui.min.js">
+  </script>
+  <script src="../cookies.js">
+  </script>
+  <script>
+   var temporadaactual=2025;var jornadastemporada=new Array();jornadastemporada[2003]=43;jornadastemporada[2004]=41;jornadastemporada[2005]=43;jornadastemporada[2006]=42;jornadastemporada[2007]=48;jornadastemporada[2008]=55;jornadastemporada[2009]=61;jornadastemporada[2010]=59;jornadastemporada[2011]=56;jornadastemporada[2012]=51;jornadastemporada[2013]=54;jornadastemporada[2014]=56;jornadastemporada[2015]=70;jornadastemporada[2016]=67;jornadastemporada[2017]=67;jornadastemporada[2018]=69;jornadastemporada[2019]=59;jornadastemporada[2020]=63;jornadastemporada[2021]=68;jornadastemporada[2022]=70;jornadastemporada[2023]=72;jornadastemporada[2024]=76;jornadastemporada[2025]=76;var grupoactual=0; 
+var quinielajornada=null;
+var timer;
+var estimer=false;
+
+$(document).ready(function() {
+ cargarquiniela(temporadaactual,-1);
+ $("#menuquiniela").addClass('activa');
+ $("#menuquiniela ul").slideDown('normal');
+ //timer=setTimeout(actualizarlive,30000);
+ //estimer=true;
+ $("#opcionpronostico").on("click",pulsadoopcionpronostico);
+ $("#opciongrupos").on("click",pulsadoopciongrupos);
+});
+
+
+function actualizarlive() {
+ if (estimer) {clearTimeout(timer);}
+ var request = $.ajax({
+     url: "leerquiniela.php",
+     dataType: "json", 
+     data: {jornada:quinielajornada.jornada, temporada:quinielajornada.temporada, eslive:1},
+     method: "POST"
+     }); 
+ request.done(function( msg ) {
+     console.log('leido live');
+     console.log(msg);
+     quinielalive=msg;
+     for (var i=0; i<=13; i++) { 
+         quinielajornada.partidos[i].resultado=quinielalive.partidos[i].resultado;
+         quinielajornada.partidos[i].resultadoq=quinielalive.partidos[i].resultadoq;
+         quinielajornada.partidos[i].signoq=quinielalive.partidos[i].signoq;
+         if (quinielalive.partidos[i].goles1p!=undefined) {
+            if ((quinielajornada.partidos[i].goles1p==undefined) || ((quinielajornada.partidos[i].goles1p<=quinielalive.partidos[i].goles1p) && (quinielajornada.partidos[i].goles2p<=quinielalive.partidos[i].goles2p))) {
+               quinielajornada.partidos[i].resultadop=quinielalive.partidos[i].resultadop;
+               quinielajornada.partidos[i].signop=quinielalive.partidos[i].signop;
+               quinielajornada.partidos[i].situacionp=quinielalive.partidos[i].situacionp;
+               }
+            }
+         }
+     quinielajornada.partidos[14].resultadoq=quinielalive.partidos[14].resultadoq;
+     quinielajornada.partidos[14].signogolesq=quinielalive.partidos[14].signogolesq;
+     if (quinielalive.partidos[14].goles1p!=undefined) {
+        if ((quinielajornada.partidos[14].goles1p==undefined) || ((quinielajornada.partidos[14].goles1p<=quinielalive.partidos[14].goles1p) && (quinielajornada.partidos[14].goles2p<=quinielalive.partidos[14].goles2p))) {
+           quinielajornada.partidos[14].resultadop=quinielalive.partidos[14].resultadop;
+           quinielajornada.partidos[14].signop=quinielalive.partidos[14].signop;
+           quinielajornada.partidos[14].situacionp=quinielalive.partidos[14].situacionp;
+           }
+        }
+     quinielajornada.aci15=quinielalive.aci15;
+     quinielajornada.eur15=quinielalive.eur15;
+     quinielajornada.aci14=quinielalive.aci14;
+     quinielajornada.eur14=quinielalive.eur14;
+     quinielajornada.aci13=quinielalive.aci13;
+     quinielajornada.eur13=quinielalive.eur13;
+     quinielajornada.aci12=quinielalive.aci12;
+     quinielajornada.eur12=quinielalive.eur12;
+     quinielajornada.aci11=quinielalive.aci11;
+     quinielajornada.eur11=quinielalive.eur11;
+     quinielajornada.aci10=quinielalive.aci10;
+     quinielajornada.eur10=quinielalive.eur10;
+     quinielajornada.aci8=quinielalive.aci8;
+     quinielajornada.eur8=quinielalive.eur8;
+     mostrarquiniela();
+     $("#botonanterior1").click(function() {cargarquiniela($(this).data().temporada,$(this).data().jornada-1);});
+     $("#botonsiguiente1").click(function() {cargarquiniela($(this).data().temporada,$(this).data().jornada+1);});
+     if (estimer) {timer=setTimeout(actualizarlive,30000);}
+     });
+ }
+
+
+function cargarquiniela(temporada,jornada) {
+ console.log(temporada);
+ console.log(jornada);
+ //console.log('precargarquiniela');
+ if (estimer) {clearTimeout(timer);}
+ var request = $.ajax({
+     url: "leerquiniela.php",
+     dataType: "json", 
+     data: {jornada:jornada, temporada:temporada, eslive:0},
+     method: "POST"
+     }); 
+ request.done(function( msg ) {
+     //console.log('cargarquiniela');
+     //console.log(msg);
+     quinielajornada=msg;
+     //console.log(quinielajornada.partidos);
+     mostrarquiniela();
+     $("#ETriples").val(6);
+     $("#EDobles").val(6);
+     $("#botonanterior1").click(function() {cargarquiniela($(this).data().temporada,$(this).data().jornada-1);});
+     $("#botonsiguiente1").click(function() {cargarquiniela($(this).data().temporada,$(this).data().jornada+1);});
+     if (jornada==-1) {cargarquiniela(temporadaactual,0);}
+     if (jornada>=0) {estimer=true;}
+     if (estimer) {timer=setTimeout(actualizarlive,30000);}
+     });
+ }
+
+
+
+function numero2(numero) {
+ return Intl.NumberFormat('es-ES', {style: 'decimal',minimumFractionDigits: 2,maximumFractionDigits: 2}).format(numero);
+ }
+
+function numero0(numero) {
+ return Intl.NumberFormat('es-ES', {style: 'decimal',minimumFractionDigits: 0,maximumFractionDigits: 0}).format(numero);
+ }
+
+
+
+function mostrar_partidos() {
+ var cpartidos,ctemporada,cadena;
+
+ ctemporada='';
+ ctemporada=ctemporada+'<label for="selecttemporada">Temporada&nbsp;</label>';
+ ctemporada=ctemporada+'<select id="selecttemporada">';
+ for (var i=temporadaactual; i>=2014; i--) {
+     if (i==quinielajornada.temporada) {ctemporada=ctemporada+'<option value='+i+' selected> '+i+'-'+(i+1)+'</option>';}
+     else {ctemporada=ctemporada+'<option value='+i+'> '+i+'-'+(i+1)+'</option>';}
+     }
+ ctemporada=ctemporada+'</select>';
+ ctemporada=ctemporada+'<label for="selectjornada">Jornada&nbsp;</label>';
+ ctemporada=ctemporada+'<select id="selectjornada">';
+ for (var i=1; i<=quinielajornada.maxjornada; i++) {
+     if (i==quinielajornada.jornada) {ctemporada=ctemporada+'<option value='+i+' selected> '+i+'</option>';}
+     else {ctemporada=ctemporada+'<option value='+i+'> '+i+'</option>';}
+     }
+ ctemporada=ctemporada+'</select>';
+ $("#temporada1x2").html(ctemporada);
+
+
+ cpartidos='';
+ cpartidos=cpartidos+'<div class="nuevalinea"></div>';
+ cpartidos=cpartidos+'<table class="tablapartidos">'; 
+ cpartidos=cpartidos+'<tr>';
+ if (quinielajornada.jornada>1) {
+     cpartidos=cpartidos+'<td id="botonanterior1" class="botonflecha" data-temporada='+quinielajornada.temporada+' data-jornada='+quinielajornada.jornada+'>';
+     cpartidos=cpartidos+'<img src="//www.webprincipal.com/futbol/images/anterior.png" border=0></td>';
+     }
+ else {
+     cpartidos=cpartidos+'<td>&nbsp;</td>';
+     }
+ cpartidos=cpartidos+'<td class="equipo">';
+ cpartidos=cpartidos+'Jornada&nbsp;&nbsp;<span class="datojornada">'+quinielajornada.jornada+'</span>';
+ cpartidos=cpartidos+'</td>'; 
+ cpartidos=cpartidos+'<td class="equipo">Fecha&nbsp;&nbsp;<span class="datofecha">'+quinielajornada.fecha+'</span></td>'; 
+ if (quinielajornada.jornada<quinielajornada.maxjornada) {
+    cpartidos=cpartidos+'<td id="botonsiguiente1" class="botonflecha" data-temporada='+quinielajornada.temporada+' data-jornada='+quinielajornada.jornada+'>';
+    cpartidos=cpartidos+'<img src="//www.webprincipal.com/futbol/images/siguiente.png" border=0></td>';
+    }
+ else {
+     cpartidos=cpartidos+'<td>&nbsp;</td>';
+     }
+ cpartidos=cpartidos+'</tr></table>'; 
+ cpartidos=cpartidos+'<table class="tablapartidos borderojo2">'; 
+ for (var i=0; i<=13; i++) { 
+     if ((i===0) || (i===4) || (i===8) || (i===11) || (i===14)) {cadena='<tr class="borderojo1">';}
+     else if ((i===3) | (i===7) || (i===10) || (i===13)) {cadena='<tr class="borderojo2">';}
+     else {cadena='<tr>';}
+     cadena=cadena+'<td class="numero">'+String(i+1)+'</td>'; 
+     cadena=cadena+'<td class="equipo">'+quinielajornada.partidos[i].equipo1+' - '+quinielajornada.partidos[i].equipo2+'</td>'; 
+     if (quinielajornada.partidos[i].resultadoq==='-') {
+        if (quinielajornada.partidos[i].situacionp!=undefined) {
+           var situacionp=quinielajornada.partidos[i].situacionp;
+           var resultadop=quinielajornada.partidos[i].resultadop;
+           if ((situacionp=='MT') || (situacionp=='HT')) {cadena=cadena+'<td class="resultadop">'+resultadop+'<br><span class="texto">Descanso</span></td>';}
+           else if (situacionp=='AP') {cadena=cadena+'<td class="resultadop">'+resultadop+'<br><span class="texto">Aplazado</span></td>';}
+           else if (situacionp=='FT') {cadena=cadena+'<td class="resultadop">'+resultadop+'<br><span class="texto">Final</span></td>';}
+           else if (situacionp=='FI') {cadena=cadena+'<td class="resultadop">'+resultadop+'<br><span class="texto"></span></td>';}
+           else if (parseInt(situacionp)!=NaN) {cadena=cadena+'<td class="resultadop">'+resultadop+'<br><span class="tiempo">'+situacionp+"'"+'</span></td>';}
+           }
+        else {
+           cadena=cadena+'<td class="fecha">'+quinielajornada.partidos[i].fechapartido+'</td>';
+           }
+        }
+     else {
+        cadena=cadena+'<td class="resultadoq">'+quinielajornada.partidos[i].resultadoq+'</td>';
+        }
+     cadena=cadena+'</tr>'; 
+     cpartidos=cpartidos+cadena; 
+     } 
+ cpartidos=cpartidos+'</table>'; 
+ cadena='<table class="tablapartidos">'; 
+ cadena=cadena+'<tr><td class="numero borderojo2" rowspan=2>15</td>';
+ cadena=cadena+'<td class=equipo>'+quinielajornada.partidos[14].equipo1+'</td>';
+ if (quinielajornada.partidos[14].resultadoq==='-') {
+    if (quinielajornada.partidos[14].situacionp!=undefined) {
+       var situacionp=quinielajornada.partidos[14].situacionp;
+       var resultadop=quinielajornada.partidos[14].resultadop;
+       if ((situacionp=='MT') || (situacionp=='HT')) {cadena=cadena+'<td class="resultadop borderojo2" rowspan=2>'+resultadop+'<br><span class="texto">Descanso</span></td>';}
+       else if (situacionp=='AP') {cadena=cadena+'<td class="resultadop borderojo2" rowspan=2>'+resultadop+'<br><span class="texto">Aplazado</span></td>';}
+       else if (situacionp=='FT') {cadena=cadena+'<td class="resultadop borderojo2" rowspan=2>'+resultadop+'<br><span class="texto">Final</span></td>';}
+       else if (situacionp=='FI') {cadena=cadena+'<td class="resultadop borderojo2" rowspan=2>'+resultadop+'<br><span class="texto"></span></td>';}
+       else if (parseInt(situacionp)!=NaN) {cadena=cadena+'<td class="resultadop borderojo2" rowspan=2>'+resultadop+'<br><span class="tiempo">'+situacionp+"'"+'</span></td>';}
+       }
+    else {
+       cadena=cadena+'<td class="fecha borderojo2" rowspan=2>'+quinielajornada.partidos[14].fechapartido+'</td>';
+       }
+    }
+ else {
+    cadena=cadena+'<td class="resultadoq borderojo2" rowspan=2>'+quinielajornada.partidos[14].resultadoq+'</td>';
+    }
+ cadena=cadena+'</tr>';
+ cadena=cadena+'<tr class="borderojo2">';
+ cadena=cadena+'<td class=equipo>'+quinielajornada.partidos[14].equipo2+'</td>';
+ cadena=cadena+'</tr>';
+ cadena=cadena+'</table>';
+ cpartidos=cpartidos+cadena;
+ $("#tablapartidos").html(cpartidos);   
+
+ $("#selecttemporada").on('change', seleccionartemporada);
+ $("#selectjornada").on('change', seleccionarjornada);
+ }
+
+
+function seleccionartemporada(e) {
+ e.preventDefault;
+ e.stopPropagation;
+ cargarquiniela(this.value,0);
+ }
+
+function seleccionarjornada(e) {
+ e.preventDefault;
+ e.stopPropagation;
+ cargarquiniela(quinielajornada.temporada,this.value);
+ }
+
+function mostrar_resultados() {
+ var c1x2,cadena;
+ c1x2='<table class="tablapronostico">'; 
+ c1x2=c1x2+'<tr><th colspan=3>Result.</th></tr>'; 
+ c1x2=c1x2+'</table>'; 
+ c1x2=c1x2+'<table class="tablapronostico">'; 
+ for (var i=0; i<=13; i++) { 
+     if ((i===0) || (i===4) || (i===8) || (i===11) || (i===14)) {cadena='<tr class="borderojo1">';}
+     else if ((i===3) | (i===7) || (i===10) || (i===13)) {cadena='<tr class="borderojo2">';}
+     else {cadena='<tr>';}
+     if (quinielajornada.partidos[i].signoq=='1') { cadena=cadena+'<td class=signomarcado>1</td>';} 
+     else if ((quinielajornada.partidos[i].signop!=undefined) && (quinielajornada.partidos[i].signop=='1')) { cadena=cadena+'<td class=signomarcadop>1</td>';} 
+     else { cadena=cadena+'<td>1</td>';} 
+     if (quinielajornada.partidos[i].signoq=='X') { cadena=cadena+'<td class=signomarcado>X</td>';} 
+     else if ((quinielajornada.partidos[i].signop!=undefined) && (quinielajornada.partidos[i].signop=='X')) { cadena=cadena+'<td class=signomarcadop>X</td>';} 
+     else { cadena=cadena+'<td>X</td>';} 
+     if (quinielajornada.partidos[i].signoq=='2') { cadena=cadena+'<td class=signomarcado>2</td>';} 
+     else if ((quinielajornada.partidos[i].signop!=undefined) && (quinielajornada.partidos[i].signop=='2')) { cadena=cadena+'<td class=signomarcadop>2</td>';} 
+     else { cadena=cadena+'<td>2</td>';} 
+     cadena=cadena+'</tr>'; 
+     c1x2=c1x2+cadena; 
+     }  
+ c1x2=c1x2+'</table>'; 
+ c1x2=c1x2+'<table class="tablapronostico pleno15r">'; 
+ cadena='<tr>';
+ if (quinielajornada.partidos[14].signogolesq.substr(0,1)=='0') { cadena=cadena+'<td class=signomarcado>0</td>';} 
+ else if ((quinielajornada.partidos[14].signogolesp!=undefined) && (quinielajornada.partidos[14].signogolesp.substr(0,1)=='0')) { cadena=cadena+'<td class=signomarcadop>0</td>';} 
+ else { cadena=cadena+'<td>0</td>';} 
+ if (quinielajornada.partidos[14].signogolesq.substr(0,1)=='1') { cadena=cadena+'<td class=signomarcado>1</td>';} 
+ else if ((quinielajornada.partidos[14].signogolesp!=undefined) && (quinielajornada.partidos[14].signogolesp.substr(0,1)=='1')) { cadena=cadena+'<td class=signomarcadop>1</td>';} 
+ else { cadena=cadena+'<td>1</td>';} 
+ if (quinielajornada.partidos[14].signogolesq.substr(0,1)=='2') { cadena=cadena+'<td class=signomarcado>2</td>';} 
+ else if ((quinielajornada.partidos[14].signogolesp!=undefined) && (quinielajornada.partidos[14].signogolesp.substr(0,1)=='2')) { cadena=cadena+'<td class=signomarcadop>2</td>';} 
+ else { cadena=cadena+'<td>2</td>';} 
+ if (quinielajornada.partidos[14].signogolesq.substr(0,1)=='M') { cadena=cadena+'<td class=signomarcado>M</td>';} 
+ else if ((quinielajornada.partidos[14].signogolesp!=undefined) && (quinielajornada.partidos[14].signogolesp.substr(0,1)=='M')) { cadena=cadena+'<td class=signomarcadop>M</td>';} 
+ else { cadena=cadena+'<td>M</td>';} 
+ cadena=cadena+'</tr>'; 
+ c1x2=c1x2+cadena;
+ cadena='<tr class="borderojo2">';
+ if (quinielajornada.partidos[14].signogolesq.substr(1,1)=='0') { cadena=cadena+'<td class=signomarcado>0</td>';} 
+ else if ((quinielajornada.partidos[14].signogolesp!=undefined) && (quinielajornada.partidos[14].signogolesp.substr(1,1)=='0')) { cadena=cadena+'<td class=signomarcadop>0</td>';} 
+ else { cadena=cadena+'<td>0</td>';} 
+ if (quinielajornada.partidos[14].signogolesq.substr(1,1)=='1') { cadena=cadena+'<td class=signomarcado>1</td>';} 
+ else if ((quinielajornada.partidos[14].signogolesp!=undefined) && (quinielajornada.partidos[14].signogolesp.substr(1,1)=='1')) { cadena=cadena+'<td class=signomarcadop>1</td>';} 
+ else { cadena=cadena+'<td>1</td>';} 
+ if (quinielajornada.partidos[14].signogolesq.substr(1,1)=='2') { cadena=cadena+'<td class=signomarcado>2</td>';} 
+ else if ((quinielajornada.partidos[14].signogolesp!=undefined) && (quinielajornada.partidos[14].signogolesp.substr(1,1)=='2')) { cadena=cadena+'<td class=signomarcadop>2</td>';} 
+ else { cadena=cadena+'<td>2</td>';} 
+ if (quinielajornada.partidos[14].signogolesq.substr(1,1)=='M') { cadena=cadena+'<td class=signomarcado>M</td>';} 
+ else if ((quinielajornada.partidos[14].signogolesp!=undefined) && (quinielajornada.partidos[14].signogolesp.substr(1,1)=='M')) { cadena=cadena+'<td class=signomarcadop>M</td>';} 
+ else { cadena=cadena+'<td>M</td>';} 
+ cadena=cadena+'</tr>'; 
+ c1x2=c1x2+cadena;
+ c1x2=c1x2+'</table>'; 
+ $("#tablaresultados").html(c1x2);   
+ }
+function mostrar_pronostico() {
+ var c1x2,cadena,claseaci;
+ c1x2='<table class="tablapronostico">'; 
+ c1x2=c1x2+'<tr><th colspan=3>Q.Base</th></tr>'; 
+ c1x2=c1x2+'</table>'; 
+ c1x2=c1x2+'<table class="tablapronostico">'; 
+ for (var i=0; i<=13; i++) { 
+     if ((i===0) || (i===4) || (i===8) || (i===11) || (i===14)) {cadena='<tr class="borderojo1">';}
+     else if ((i===3) | (i===7) || (i===10) || (i===13)) {cadena='<tr class="borderojo2">';}
+     else {cadena='<tr>';}
+     if (quinielajornada.partidos[i].pron.indexOf('1')>=0) { 
+        if (quinielajornada.partidos[i].signoq=='1') {cadena=cadena+'<td class="signomarcado signoacierto signopronostico" data-signo="1" data-indice="'+i+'">1</td>';} 
+        else if ((quinielajornada.partidos[i].signop!=undefined) && (quinielajornada.partidos[i].signop=='1')) {cadena=cadena+'<td class="signomarcado signoaciertop signopronostico" data-signo="1" data-indice="'+i+'">1</td>';} 
+        else {cadena=cadena+'<td class="signomarcado signopronostico" data-signo="1" data-indice="'+i+'">1</td>';} 
+        }
+     else { 
+        if (quinielajornada.partidos[i].signoq=='1') {cadena=cadena+'<td class="signopronostico signofallo" data-signo="1" data-indice="'+i+'">1</td>';} 
+        else if ((quinielajornada.partidos[i].signop!=undefined) && (quinielajornada.partidos[i].signop=='1')) {cadena=cadena+'<td class="signofallop signopronostico" data-signo="1" data-indice="'+i+'">1</td>';} 
+        else {cadena=cadena+'<td class="signopronostico" data-signo="1" data-indice="'+i+'">1</td>';}
+        }
+     if (quinielajornada.partidos[i].pron.indexOf('X')>=0) { 
+        if (quinielajornada.partidos[i].signoq=='X') {cadena=cadena+'<td class="signomarcado signoacierto signopronostico" data-signo="X" data-indice="'+i+'">X</td>';}
+        else if ((quinielajornada.partidos[i].signop!=undefined) && (quinielajornada.partidos[i].signop=='X')) {cadena=cadena+'<td class="signomarcado signoaciertop signopronostico" data-signo="X" data-indice="'+i+'">X</td>';} 
+        else {cadena=cadena+'<td class="signomarcado signopronostico" data-signo="X" data-indice="'+i+'">X</td>';}
+        }
+     else { 
+        if (quinielajornada.partidos[i].signoq=='X') {cadena=cadena+'<td class="signopronostico signofallo" data-signo="X" data-indice="'+i+'">X</td>';} 
+        else if ((quinielajornada.partidos[i].signop!=undefined) && (quinielajornada.partidos[i].signop=='X')) {cadena=cadena+'<td class="signofallop signopronostico" data-signo="X" data-indice="'+i+'">X</td>';} 
+        else {cadena=cadena+'<td class="signopronostico" data-signo="X" data-indice="'+i+'">X</td>';}
+        }
+     if (quinielajornada.partidos[i].pron.indexOf('2')>=0) { 
+        if (quinielajornada.partidos[i].signoq=='2') {cadena=cadena+'<td class="signomarcado signoacierto signopronostico" data-signo="2" data-indice="'+i+'">2</td>';}
+        else if ((quinielajornada.partidos[i].signop!=undefined) && (quinielajornada.partidos[i].signop=='2')) {cadena=cadena+'<td class="signomarcado signoaciertop signopronostico" data-signo="2" data-indice="'+i+'">2</td>';} 
+        else {cadena=cadena+'<td class="signomarcado signopronostico" data-signo="2" data-indice="'+i+'">2</td>';}
+        } 
+     else { 
+        if (quinielajornada.partidos[i].signoq=='2') {cadena=cadena+'<td class="signopronostico signofallo" data-signo="2" data-indice="'+i+'">2</td>';}
+        else if ((quinielajornada.partidos[i].signop!=undefined) && (quinielajornada.partidos[i].signop=='2')) {cadena=cadena+'<td class="signofallop signopronostico" data-signo="2" data-indice="'+i+'">2</td>';} 
+        else {cadena=cadena+'<td class="signopronostico" data-signo="2" data-indice="'+i+'">2</td>';}
+        } 
+     cadena=cadena+'</tr>'; 
+     c1x2=c1x2+cadena; 
+     }  
+ c1x2=c1x2+'</table>'; 
+ c1x2=c1x2+'<table class="tablapronostico pleno15r">'; 
+ cadena='<tr>';
+ if (quinielajornada.partidos[14].pron.substr(0,1)=='0') { cadena=cadena+'<td class="signomarcado signopleno15" data-signo="0" data-indice="0">0</td>';} 
+ else { cadena=cadena+'<td class="signopleno15" data-signo="0" data-indice="0">0</td>';} 
+ if (quinielajornada.partidos[14].pron.substr(0,1)=='1') { cadena=cadena+'<td class="signomarcado signopleno15" data-signo="1" data-indice="0">1</td>';} 
+ else { cadena=cadena+'<td class="signopleno15" data-signo="1" data-indice="0">1</td>';} 
+ if (quinielajornada.partidos[14].pron.substr(0,1)=='2') { cadena=cadena+'<td class="signomarcado signopleno15" data-signo="2" data-indice="0">2</td>';} 
+ else { cadena=cadena+'<td class="signopleno15" data-signo="2" data-indice="0">2</td>';} 
+ if (quinielajornada.partidos[14].pron.substr(0,1)=='M') { cadena=cadena+'<td class="signomarcado signopleno15" data-signo="M" data-indice="0">M</td>';} 
+ else { cadena=cadena+'<td class="signopleno15" data-signo="M" data-indice="0">M</td>';} 
+ cadena=cadena+'</tr>'; 
+ c1x2=c1x2+cadena;
+ cadena='<tr class="borderojo2">';
+ if (quinielajornada.partidos[14].pron.substr(1,1)=='0') { cadena=cadena+'<td class="signomarcado signopleno15" data-signo="0" data-indice="1">0</td>';} 
+ else { cadena=cadena+'<td class="signopleno15" data-signo="0" data-indice="1">0</td>';} 
+ if (quinielajornada.partidos[14].pron.substr(1,1)=='1') { cadena=cadena+'<td class="signomarcado signopleno15" data-signo="1" data-indice="1">1</td>';} 
+ else { cadena=cadena+'<td class="signopleno15" data-signo="1" data-indice="1">1</td>';} 
+ if (quinielajornada.partidos[14].pron.substr(1,1)=='2') { cadena=cadena+'<td class="signomarcado signopleno15" data-signo="2" data-indice="1">2</td>';} 
+ else { cadena=cadena+'<td class="signopleno15" data-signo="2" data-indice="1">2</td>';} 
+ if (quinielajornada.partidos[14].pron.substr(1,1)=='M') { cadena=cadena+'<td class="signomarcado signopleno15" data-signo="M" data-indice="1">M</td>';} 
+ else { cadena=cadena+'<td class="signopleno15" data-signo="M" data-indice="1">M</td>';} 
+ cadena=cadena+'</tr>'; 
+ c1x2=c1x2+cadena;
+ c1x2=c1x2+'</table>'; 
+ $("#tablapronostico").html(c1x2);   
+ $(".signopronostico").on("click",pulsadosignopronostico);
+ $(".signopleno15").on("click",pulsadosignopleno15);
+ } 
+function mostrar_probabilidades() {
+ var cprobab,cadena;
+ cprobab='<table class=tablaprobabilidades>'; 
+ cprobab=cprobab+'<tr><th colspan=3>Probabilid.<br><span class="porc">&nbsp;%1&nbsp;&nbsp;&nbsp;%X&nbsp;&nbsp;&nbsp;%2</span></th></tr>'; 
+ for (var i=0; i<=13; i++) { 
+     if ((i===0) || (i===4) || (i===8) || (i===11) || (i===14)) {cadena='<tr class="borderojo1">';}
+     else if ((i===3) | (i===7) || (i===10) || (i===13)) {cadena='<tr class="borderojo2">';}
+     else {cadena='<tr>';}
+     cadena=cadena+'<td><input type=number size=2 value="'+Math.round(quinielajornada.partidos[i].porc1)+'" readonly></td>'; 
+     cadena=cadena+'<td><input type=number size=2 value="'+Math.round(quinielajornada.partidos[i].porcX)+'" readonly></td>'; 
+     cadena=cadena+'<td><input type=number size=2 value="'+Math.round(quinielajornada.partidos[i].porc2)+'" readonly></td>'; 
+     cadena=cadena+'</tr>'; 
+     cprobab=cprobab+cadena; 
+     } 
+ cprobab=cprobab+'</table>'; 
+ cprobab=cprobab+'<table class="tablaprobabilidades pleno15r">'; 
+ cadena='<tr>';
+ cadena=cadena+'<td><input type=number size=2 value="'+Math.round(quinielajornada.partidos[14].porcL0)+'" readonly></td>'; 
+ cadena=cadena+'<td><input type=number size=2 value="'+Math.round(quinielajornada.partidos[14].porcL1)+'" readonly></td>'; 
+ cadena=cadena+'<td><input type=number size=2 value="'+Math.round(quinielajornada.partidos[14].porcL2)+'" readonly></td>'; 
+ cadena=cadena+'<td><input type=number size=2 value="'+Math.round(quinielajornada.partidos[14].porcLM)+'" readonly></td>'; 
+ cadena=cadena+'</tr>';
+ cprobab=cprobab+cadena; 
+ cadena='<tr class="borderojo2">';
+ cadena=cadena+'<td><input type=number size=2 value="'+Math.round(quinielajornada.partidos[14].porcV0)+'" readonly></td>'; 
+ cadena=cadena+'<td><input type=number size=2 value="'+Math.round(quinielajornada.partidos[14].porcV1)+'" readonly></td>'; 
+ cadena=cadena+'<td><input type=number size=2 value="'+Math.round(quinielajornada.partidos[14].porcV2)+'" readonly></td>'; 
+ cadena=cadena+'<td><input type=number size=2 value="'+Math.round(quinielajornada.partidos[14].porcVM)+'" readonly></td>'; 
+ cadena=cadena+'</tr>';
+ cprobab=cprobab+cadena; 
+ cprobab=cprobab+'</table>'; 
+ $("#tablaprobabilidades").html(cprobab);   
+ }
+function mostrar_grupo() {
+ var cgrupos,cadena;
+ document.getElementById("gruposminaciertos").value=quinielajornada.grupos[grupoactual].minaciertos;
+ document.getElementById("gruposmaxaciertos").value=quinielajornada.grupos[grupoactual].maxaciertos;
+ cgrupos='<table class=tablapronostico>'; 
+ cgrupos=cgrupos+'<th colspan=3 class="grupos">Gr.'+Number(grupoactual+1)+'</th>'; 
+ for (var i=0; i<=13; i++) { 
+     if ((i===0) || (i===4) || (i===8) || (i===11) || (i===14)) {cadena='<tr class="borderojo1">';}
+     else if ((i===3) | (i===7) || (i===10) || (i===13)) {cadena='<tr class="borderojo2">';}
+     else {cadena='<tr>';}
+     if (quinielajornada.grupos[grupoactual].Pronostico[i].indexOf('1')>=0) { cadena=cadena+'<td class="signomarcado signogrupo" data-signo="1" data-indice="'+i+'">1</td>';} 
+     else { cadena=cadena+'<td class="signogrupo" data-signo="1" data-indice="'+i+'">1</td>';} 
+     if (quinielajornada.grupos[grupoactual].Pronostico[i].indexOf('X')>=0) { cadena=cadena+'<td class="signomarcado signogrupo" data-signo="X" data-indice="'+i+'">X</td>';} 
+     else { cadena=cadena+'<td class="signogrupo" data-signo="X" data-indice="'+i+'">X</td>';} 
+     if (quinielajornada.grupos[grupoactual].Pronostico[i].indexOf('2')>=0) { cadena=cadena+'<td class="signomarcado signogrupo" data-signo="2" data-indice="'+i+'">2</td>';} 
+     else { cadena=cadena+'<td class="signogrupo" data-signo="2" data-indice="'+i+'">2</td>';} 
+     cadena=cadena+'</tr>'; 
+     cgrupos=cgrupos+cadena; 
+     } 
+ cgrupos=cgrupos+'</table>'; 
+ cgrupos=cgrupos+'<table class="tablapronostico pleno15r">'; 
+ cgrupos=cgrupos+'<tr><td></td></tr>';
+ cgrupos=cgrupos+'<tr><td></td></tr>';
+ cgrupos=cgrupos+'</table>'; 
+ $("#tablagrupo").html(cgrupos);   
+ $(".signogrupo").on("click",pulsadosignogrupo);
+ }
+
+function mostrar_acertantes() {
+ var cacertantes,mostraraciertos,mostraracertantes,aciertos,fallos;
+ cacertantes='';     
+ mostraraciertos=false;
+ mostraracertantes=false;
+ aciertos=0;
+ fallos=0;
+ for (var i=0; i<=13; i++) {
+     if (quinielajornada.partidos[i].signoq!=='') {
+        mostraraciertos=true;
+        if (quinielajornada.partidos[i].pron.indexOf(quinielajornada.partidos[i].signoq)>=0) {
+           aciertos=aciertos+1;
+           }
+        else {
+           fallos=fallos+1;
+           }
+        }      
+     else if (quinielajornada.partidos[i].signop!=undefined) {
+        mostraraciertos=true;
+        if (quinielajornada.partidos[i].pron.indexOf(quinielajornada.partidos[i].signop)>=0) {
+           aciertos=aciertos+1;
+           }
+        else {
+           fallos=fallos+1;
+           }
+        }
+     }
+ if ((aciertos==14) && (quinielajornada.partidos[14].signogolesq==quinielajornada.partidos[14].pron)) {
+    aciertos++;
+    }
+ else if ((aciertos==14) && (quinielajornada.partidos[14].signogolesp==quinielajornada.partidos[14].pron)) {
+    aciertos++;
+    }
+ if (quinielajornada.aci15!==null) {mostraracertantes=true;}
+ if (mostraraciertos) {
+    cacertantes+='<table class="acertantes">';
+    cacertantes+='<td class="tituloaci">Aciertos Quiniela Base:</td><td class="aciertos">'+aciertos+'</td><td class="titulofallos">Fallos Quiniela Base:</td><td class="fallos">'+fallos+'</td></tr>';
+    cacertantes+='</table>';
+    }
+ if (mostraracertantes) {
+    cacertantes+='<table class="acertantes">';
+    cacertantes+='<tr class="f0"><th>Categorias</th><th>Acertantes</th><th>Premios</th></tr>';
+    cacertantes+='<tr class="f1"><td>Pleno al 15</td><td align=right>'+numero0(quinielajornada.aci15)+'</td><td align=right>'+numero2(quinielajornada.eur15)+' &euro;</td></tr>';
+    cacertantes+='<tr class="f2"><td>1&ordf; (14 Aciertos)</td><td align=right>'+numero0(quinielajornada.aci14)+'</td><td align=right>'+numero2(quinielajornada.eur14)+' &euro;</td></tr>';
+    cacertantes+='<tr class="f1"><td>2&ordf; (13 Aciertos)</td><td align=right>'+numero0(quinielajornada.aci13)+'</td><td align=right>'+numero2(quinielajornada.eur13)+' &euro;</td></tr>';
+    cacertantes+='<tr class="f2"><td>3&ordf; (12 Aciertos)</td><td align=right>'+numero0(quinielajornada.aci12)+'</td><td align=right>'+numero2(quinielajornada.eur12)+' &euro;</td></tr>';
+    cacertantes+='<tr class="f1"><td>4&ordf; (11 Aciertos)</td><td align=right>'+numero0(quinielajornada.aci11)+'</td><td align=right>'+numero2(quinielajornada.eur11)+' &euro;</td></tr>';
+    cacertantes+='<tr class="f2"><td>5&ordf; (10 Aciertos)</td><td align=right>'+numero0(quinielajornada.aci10)+'</td><td align=right>'+numero2(quinielajornada.eur10)+' &euro;</td></tr>';
+    cacertantes+='<tr class="f1"><td>Elige 8</td><td align=right>'+numero0(quinielajornada.aci8)+'</td><td align=right>'+numero2(quinielajornada.eur8)+' &euro;</td></tr>';
+    cacertantes+='</table>';
+    }
+
+ $("#tablaacertantes").html(cacertantes);   
+ }
+
+function mostrarquiniela() {
+ mostrar_partidos();
+ mostrar_resultados();
+ mostrar_pronostico();
+ mostrar_probabilidades();
+ mostrar_grupo();
+ mostrar_acertantes();
+ }
+
+function pulsadosignopronostico(e) {
+ var indice,signo,posicion,cadena
+ e.preventDefault();
+ e.stopPropagation();
+ indice=$(this).data("indice");
+ signo=$(this).data("signo");
+ if (quinielajornada.partidos[indice].pron.indexOf(signo)>=0) {
+    cadena=quinielajornada.partidos[indice].pron;
+    posicion=cadena.indexOf(signo);
+    quinielajornada.partidos[indice].pron=cadena.substr(0,posicion)+cadena.substr(posicion+1);
+    }
+ else {
+    quinielajornada.partidos[indice].pron+=signo;
+    }
+ mostrar_pronostico();
+ mostrar_acertantes();
+ }
+
+
+function pulsadosignopleno15(e) {
+ var indice,signo,posicion,cadena
+ e.preventDefault();
+ e.stopPropagation();
+ indice=$(this).data("indice");
+ signo=$(this).data("signo");
+ if (indice===0) {
+    quinielajornada.partidos[14].pron=signo+quinielajornada.partidos[14].pron.substr(1,1);
+    }
+ else {
+    quinielajornada.partidos[14].pron=quinielajornada.partidos[14].pron.substr(0,1)+signo;
+    }
+ mostrar_pronostico();
+ mostrar_acertantes();
+ }
+
+function pulsadosignogrupo(e) {
+ var indice,signo,posicion,cadena
+ e.preventDefault();
+ e.stopPropagation();
+ indice=$(this).data("indice");
+ signo=$(this).data("signo");
+ if (quinielajornada.grupos[grupoactual].Pronostico[indice].indexOf(signo)>=0) {
+    cadena=quinielajornada.grupos[grupoactual].Pronostico[indice];
+    posicion=cadena.indexOf(signo);
+    quinielajornada.grupos[grupoactual].Pronostico[indice]=cadena.substr(0,posicion)+cadena.substr(posicion+1);
+    }
+ else {
+    quinielajornada.grupos[grupoactual].Pronostico[indice]+=signo;
+    }
+ mostrar_grupo();
+ }
+
+function seleccionargrupo(ngrupo) { 
+ quinielajornada.grupos[grupoactual].minaciertos=document.getElementById("gruposminaciertos").value;
+ quinielajornada.grupos[grupoactual].maxaciertos=document.getElementById("gruposmaxaciertos").value;
+ grupoactual=ngrupo; 
+ mostrar_grupo(); 
+ } 
+
+function BorrarGrupos() {
+ for (var i=0; i<=48; i++) {
+     quinielajornada.grupos[i].minaciertos=0;
+     quinielajornada.grupos[i].maxaciertos=0;
+     for (var indice=0; indice<=14; indice++) {
+         quinielajornada.grupos[i].Pronostico[indice]='';
+         }
+     }
+ mostrar_grupo();
+ } 
+
+function Generar14() { 
+ for (var i=0; i<=13; i++) { 
+     quinielajornada.partidos[i].pron="1X2";
+     } 
+ mostrar_pronostico();
+ mostrar_acertantes();
+ } 
+
+function pulsadoopcionpronostico() {
+ $("#tablaresultados").css("display", "inline-block");
+ $("#tablapronostico").css("display", "inline-block");
+ $("#tablagrupo").css("display", "none");
+ $("#tablagrupos").css("display", "none");
+ $("#opcionpronostico").addClass("opcionactual");
+ $("#opciongrupos").removeClass("opcionactual");
+ }
+
+function pulsadoopciongrupos() {
+ $("#tablaresultados").css("display", "none");
+ $("#tablapronostico").css("display", "none");
+ $("#tablagrupo").css("display", "inline-block");
+ $("#tablagrupos").css("display", "inline-block");
+ $("#opcionpronostico").removeClass("opcionactual");
+ $("#opciongrupos").addClass("opcionactual");
+ }
+
+
+
+function Recomendadas() {
+ var ventana,texto; 
+ texto='<input type=hidden name=quinielajornada value='+encodeURI(JSON.stringify(quinielajornada))+'>';
+ texto=texto+'<input type=hidden name=quiniela1 value=25>';
+ document.getElementById("lapuestasrecomendadas").innerHTML=texto;
+ document.apuestasrecomendadas.submit();
+ }
+
+
+
+
+
+
+function GenerarQuiniela() { 
+ var pasatriples,itriples,pasadobles,idobles;
+ var vprimero=new Array(); 
+ var vsegundo=new Array(); 
+ var vtercero=new Array(); 
+ var cprimero=new Array(); 
+ var csegundo=new Array(); 
+ var ctercero=new Array(); 
+ var pron=new Array(); 
+
+ for (var i=0; i<=13; i++) { 
+     var porc1=quinielajornada.partidos[i].porc1;
+     var porcX=quinielajornada.partidos[i].porcX;
+     var porc2=quinielajornada.partidos[i].porc2;
+     if ((porc1>=porcX) && (porc1>=porc2)) { 
+        vprimero[i]=porc1; 
+        cprimero[i]="1"; 
+        if (porcX>=porc2) { 
+           vsegundo[i]=porcX; 
+           vtercero[i]=porc2; 
+           csegundo[i]="X"; 
+           ctercero[i]="2"; 
+           }
+        else { 
+           vsegundo[i]=porc2; 
+           vtercero[i]=porcX; 
+           csegundo[i]="2"; 
+           ctercero[i]="X"; 
+           }
+        }
+     if ((porcX>=porc1) && (porcX>=porc2)) { 
+        vprimero[i]=porcX; 
+        cprimero[i]="X"; 
+        if (porc1>=porc2) { 
+           vsegundo[i]=porc1; 
+           vtercero[i]=porc2; 
+           csegundo[i]="1"; 
+           ctercero[i]="2"; 
+           }
+        else { 
+           vsegundo[i]=porc2; 
+           vtercero[i]=porc1; 
+           csegundo[i]="2"; 
+           ctercero[i]="1"; 
+           }
+        }
+     if ((porc2>=porc1) && (porc2>=porcX)) { 
+        vprimero[i]=porc2; 
+        cprimero[i]="2"; 
+        if (porc1>=porcX) { 
+           vsegundo[i]=porc1; 
+           vtercero[i]=porcX; 
+           csegundo[i]="1"; 
+           ctercero[i]="X"; 
+           }
+        else { 
+           vsegundo[i]=porcX; 
+           vtercero[i]=porc1; 
+           csegundo[i]="X"; 
+           ctercero[i]="1"; 
+           }
+        }
+     }
+ if (document.getElementById("ETriples").value>14) {document.getElementById("ETriples").value=14} 
+ if (document.getElementById("EDobles").value>(14-document.getElementById("ETriples").value)) {document.getElementById("EDobles").value=14-document.getElementById("ETriples").value} 
+ for (var i=0; i<=13; i++) { 
+     pron[i]="" 
+     }
+ pasatriples=0; 
+ while (pasatriples<document.getElementById("ETriples").value) { 
+   itriples=-1; 
+   for (var i=0; i<=13; i++) { 
+       if (pron[i]=="") { 
+          if (itriples==-1) {itriples=i;}
+          else { 
+             if (vtercero[i]>vtercero[itriples]) {itriples=i;}
+             }
+          }
+       }
+   pron[itriples]=cprimero[itriples]+csegundo[itriples]+ctercero[itriples]; 
+   pasatriples=pasatriples+1; 
+   }
+ pasadobles=0; 
+ while (pasadobles<document.getElementById("EDobles").value) { 
+   idobles=-1; 
+   for (var i=0; i<=13; i++) { 
+       if (pron[i]=="") { 
+          if (idobles==-1) {idobles=i;}
+          else { 
+             if (vsegundo[i]>vsegundo[idobles]) {idobles=i;}
+             }
+          }
+       }
+   pron[idobles]=cprimero[idobles]+csegundo[idobles]; 
+   pasadobles=pasadobles+1; 
+   }
+ for (var i=0; i<=13; i++) { 
+     if (pron[i]=="") { 
+        pron[i]=cprimero[i] 
+        }
+     }
+ for (var i=0; i<=13; i++) { 
+     quinielajornada.partidos[i].pron=pron[i];    
+     }
+ mostrar_pronostico();
+ mostrar_acertantes();
+ }
+
+
+
+function GenerarApuestas() { 
+ var ventana,nreduce,cpron,chtml;
+ var texto="";
+ var ntriples=0;
+
+ for (var i=0; i<=13; i++) {
+     if (quinielajornada.partidos[i].pron.length==3) {ntriples++;}
+     }
+ if ((document.getElementById("ETriples").value>7) || (ntriples>7)) { 
+    alert("No puede seleccionar mas de 7 triples"); 
+    return; 
+    } 
+
+
+ console.log(JSON.stringify(quinielajornada));
+ texto=texto+"<input type=hidden name=quinielajornada value="+encodeURI(JSON.stringify(quinielajornada))+">";
+ nreduce=14;
+ for (var i=0; i<document.getElementsByName("Reduccion").length; i++) {
+     if (document.getElementsByName("Reduccion")[i].checked) {nreduce=document.getElementsByName("Reduccion")[i].value}
+     }
+ texto=texto+"<input type=hidden name=nreduce value="+nreduce+">";
+ texto=texto+"<input type=hidden name=numminvar value="+document.getElementById("numminvar").value+">";
+ texto=texto+"<input type=hidden name=nummaxvar value="+document.getElementById("nummaxvar").value+">";
+ texto=texto+"<input type=hidden name=numminX value="+document.getElementById("numminX").value+">";
+ texto=texto+"<input type=hidden name=nummaxX value="+document.getElementById("nummaxX").value+">";
+ texto=texto+"<input type=hidden name=nummin2 value="+document.getElementById("nummin2").value+">";
+ texto=texto+"<input type=hidden name=nummax2 value="+document.getElementById("nummax2").value+">";
+ texto=texto+"<input type=hidden name=nummininterrupciones value="+document.getElementById("nummininterrupciones").value+">";
+ texto=texto+"<input type=hidden name=nummaxinterrupciones value="+document.getElementById("nummaxinterrupciones").value+">";
+ texto=texto+"<input type=hidden name=numminsegvar value="+document.getElementById("numminsegvar").value+">";
+ texto=texto+"<input type=hidden name=nummaxsegvar value="+document.getElementById("nummaxsegvar").value+">";
+ texto=texto+"<input type=hidden name=numminseg1 value="+document.getElementById("numminseg1").value+">";
+ texto=texto+"<input type=hidden name=nummaxseg1 value="+document.getElementById("nummaxseg1").value+">";
+ texto=texto+"<input type=hidden name=numminsegx value="+document.getElementById("numminsegx").value+">";
+ texto=texto+"<input type=hidden name=nummaxsegx value="+document.getElementById("nummaxsegx").value+">";
+ texto=texto+"<input type=hidden name=numminseg2 value="+document.getElementById("numminseg2").value+">";
+ texto=texto+"<input type=hidden name=nummaxseg2 value="+document.getElementById("nummaxseg2").value+">";
+ texto=texto+"<input type=hidden name=numminsumas value="+document.getElementById("numminsumas").value+">";
+ texto=texto+"<input type=hidden name=nummaxsumas value="+document.getElementById("nummaxsumas").value+">";
+ texto=texto+"<input type=hidden name=minpareja11 value="+document.getElementById("minpareja11").value+">";
+ texto=texto+"<input type=hidden name=maxpareja11 value="+document.getElementById("maxpareja11").value+">";
+ texto=texto+"<input type=hidden name=minpareja1X value="+document.getElementById("minpareja1X").value+">";
+ texto=texto+"<input type=hidden name=maxpareja1X value="+document.getElementById("maxpareja1X").value+">";
+ texto=texto+"<input type=hidden name=minpareja12 value="+document.getElementById("minpareja12").value+">";
+ texto=texto+"<input type=hidden name=maxpareja12 value="+document.getElementById("maxpareja12").value+">";
+ texto=texto+"<input type=hidden name=minparejaX1 value="+document.getElementById("minparejaX1").value+">";
+ texto=texto+"<input type=hidden name=maxparejaX1 value="+document.getElementById("maxparejaX1").value+">";
+ texto=texto+"<input type=hidden name=minparejaXX value="+document.getElementById("minparejaXX").value+">";
+ texto=texto+"<input type=hidden name=maxparejaXX value="+document.getElementById("maxparejaXX").value+">";
+ texto=texto+"<input type=hidden name=minparejaX2 value="+document.getElementById("minparejaX2").value+">";
+ texto=texto+"<input type=hidden name=maxparejaX2 value="+document.getElementById("maxparejaX2").value+">";
+ texto=texto+"<input type=hidden name=minpareja21 value="+document.getElementById("minpareja21").value+">";
+ texto=texto+"<input type=hidden name=maxpareja21 value="+document.getElementById("maxpareja21").value+">";
+ texto=texto+"<input type=hidden name=minpareja2X value="+document.getElementById("minpareja2X").value+">";
+ texto=texto+"<input type=hidden name=maxpareja2X value="+document.getElementById("maxpareja2X").value+">";
+ texto=texto+"<input type=hidden name=minpareja22 value="+document.getElementById("minpareja22").value+">";
+ texto=texto+"<input type=hidden name=maxpareja22 value="+document.getElementById("maxpareja22").value+">";
+ texto=texto+"<input type=hidden name=mintrio111 value="+document.getElementById("mintrio111").value+">";
+ texto=texto+"<input type=hidden name=maxtrio111 value="+document.getElementById("maxtrio111").value+">";
+ texto=texto+"<input type=hidden name=mintrio11X value="+document.getElementById("mintrio11X").value+">";
+ texto=texto+"<input type=hidden name=maxtrio11X value="+document.getElementById("maxtrio11X").value+">";
+ texto=texto+"<input type=hidden name=mintrio112 value="+document.getElementById("mintrio112").value+">";
+ texto=texto+"<input type=hidden name=maxtrio112 value="+document.getElementById("maxtrio112").value+">";
+ texto=texto+"<input type=hidden name=mintrio1X1 value="+document.getElementById("mintrio1X1").value+">";
+ texto=texto+"<input type=hidden name=maxtrio1X1 value="+document.getElementById("maxtrio1X1").value+">";
+ texto=texto+"<input type=hidden name=mintrio1XX value="+document.getElementById("mintrio1XX").value+">";
+ texto=texto+"<input type=hidden name=maxtrio1XX value="+document.getElementById("maxtrio1XX").value+">";
+ texto=texto+"<input type=hidden name=mintrio1X2 value="+document.getElementById("mintrio1X2").value+">";
+ texto=texto+"<input type=hidden name=maxtrio1X2 value="+document.getElementById("maxtrio1X2").value+">";
+ texto=texto+"<input type=hidden name=mintrio121 value="+document.getElementById("mintrio121").value+">";
+ texto=texto+"<input type=hidden name=maxtrio121 value="+document.getElementById("maxtrio121").value+">";
+ texto=texto+"<input type=hidden name=mintrio12X value="+document.getElementById("mintrio12X").value+">";
+ texto=texto+"<input type=hidden name=maxtrio12X value="+document.getElementById("maxtrio12X").value+">";
+ texto=texto+"<input type=hidden name=mintrio122 value="+document.getElementById("mintrio122").value+">";
+ texto=texto+"<input type=hidden name=maxtrio122 value="+document.getElementById("maxtrio122").value+">";
+ texto=texto+"<input type=hidden name=mintrioX11 value="+document.getElementById("mintrioX11").value+">";
+ texto=texto+"<input type=hidden name=maxtrioX11 value="+document.getElementById("maxtrioX11").value+">";
+ texto=texto+"<input type=hidden name=mintrioX1X value="+document.getElementById("mintrioX1X").value+">";
+ texto=texto+"<input type=hidden name=maxtrioX1X value="+document.getElementById("maxtrioX1X").value+">";
+ texto=texto+"<input type=hidden name=mintrioX12 value="+document.getElementById("mintrioX12").value+">";
+ texto=texto+"<input type=hidden name=maxtrioX12 value="+document.getElementById("maxtrioX12").value+">";
+ texto=texto+"<input type=hidden name=mintrioXX1 value="+document.getElementById("mintrioXX1").value+">";
+ texto=texto+"<input type=hidden name=maxtrioXX1 value="+document.getElementById("maxtrioXX1").value+">";
+ texto=texto+"<input type=hidden name=mintrioXXX value="+document.getElementById("mintrioXXX").value+">";
+ texto=texto+"<input type=hidden name=maxtrioXXX value="+document.getElementById("maxtrioXXX").value+">";
+ texto=texto+"<input type=hidden name=mintrioXX2 value="+document.getElementById("mintrioXX2").value+">";
+ texto=texto+"<input type=hidden name=maxtrioXX2 value="+document.getElementById("maxtrioXX2").value+">";
+ texto=texto+"<input type=hidden name=mintrioX21 value="+document.getElementById("mintrioX21").value+">";
+ texto=texto+"<input type=hidden name=maxtrioX21 value="+document.getElementById("maxtrioX21").value+">";
+ texto=texto+"<input type=hidden name=mintrioX2X value="+document.getElementById("mintrioX2X").value+">";
+ texto=texto+"<input type=hidden name=maxtrioX2X value="+document.getElementById("maxtrioX2X").value+">";
+ texto=texto+"<input type=hidden name=mintrioX22 value="+document.getElementById("mintrioX22").value+">";
+ texto=texto+"<input type=hidden name=maxtrioX22 value="+document.getElementById("maxtrioX22").value+">";
+ texto=texto+"<input type=hidden name=mintrio211 value="+document.getElementById("mintrio211").value+">";
+ texto=texto+"<input type=hidden name=maxtrio211 value="+document.getElementById("maxtrio211").value+">";
+ texto=texto+"<input type=hidden name=mintrio21X value="+document.getElementById("mintrio21X").value+">";
+ texto=texto+"<input type=hidden name=maxtrio21X value="+document.getElementById("maxtrio21X").value+">";
+ texto=texto+"<input type=hidden name=mintrio212 value="+document.getElementById("mintrio212").value+">";
+ texto=texto+"<input type=hidden name=maxtrio212 value="+document.getElementById("maxtrio212").value+">";
+ texto=texto+"<input type=hidden name=mintrio2X1 value="+document.getElementById("mintrio2X1").value+">";
+ texto=texto+"<input type=hidden name=maxtrio2X1 value="+document.getElementById("maxtrio2X1").value+">";
+ texto=texto+"<input type=hidden name=mintrio2XX value="+document.getElementById("mintrio2XX").value+">";
+ texto=texto+"<input type=hidden name=maxtrio2XX value="+document.getElementById("maxtrio2XX").value+">";
+ texto=texto+"<input type=hidden name=mintrio2X2 value="+document.getElementById("mintrio2X2").value+">";
+ texto=texto+"<input type=hidden name=maxtrio2X2 value="+document.getElementById("maxtrio2X2").value+">";
+ texto=texto+"<input type=hidden name=mintrio221 value="+document.getElementById("mintrio221").value+">";
+ texto=texto+"<input type=hidden name=maxtrio221 value="+document.getElementById("maxtrio221").value+">";
+ texto=texto+"<input type=hidden name=mintrio22X value="+document.getElementById("mintrio22X").value+">";
+ texto=texto+"<input type=hidden name=maxtrio22X value="+document.getElementById("maxtrio22X").value+">";
+ texto=texto+"<input type=hidden name=mintrio222 value="+document.getElementById("mintrio222").value+">";
+ texto=texto+"<input type=hidden name=maxtrio222 value="+document.getElementById("maxtrio222").value+">";
+
+document.getElementById("lcalcularapuestas").innerHTML=texto;
+document.calcularapuestas.submit();
+}
+  </script>
+ </head>
+ <body>
+  <script>
+   var cookiestecnicas=true;
+var cookiespersonalizacion=false;
+var cookiesanalisis=false;
+var cookiespublicidad=false;
+var cookiespublicidadcomportamental=false;
+  </script>
+  <script>
+   //para definir el gtag para google analytics
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  </script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-128660659-1">
+  </script>
+  <script>
+   window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  //Inicial configuracion para gtag
+  if (cookiesanalisis && cookiespublicidad) {
+     gtag('consent', 'default', {'ad_storage':'granted', 'analytics_storage':'granted'});
+     }
+  else if (cookiesanalisis) {
+     gtag('consent', 'default', {'ad_storage':'denied', 'analytics_storage':'granted'});
+     }
+  else if (cookiespublicidad) {
+     gtag('consent', 'default', {'ad_storage':'granted', 'analytics_storage':'denied'});
+     }
+  else {
+     gtag('consent', 'default', {'ad_storage':'denied', 'analytics_storage':'denied'});
+     }
+  gtag('js', new Date());
+  gtag('config', 'UA-128660659-1');
+  </script>
+  <header class="cabecera">
+   <nav class="nav-menusuperior">
+    <div class="nav-icono">
+     <a class="nav-enlacemenu">
+      <div class="nav-imagenmenu">
+      </div>
+     </a>
+    </div>
+   </nav>
+   <div class="logocabecera">
+    <a href="https://www.webprincipal.com/">
+     <div class="logowebprincipal">
+      <svg height="45px" id="logowebprincipal" version="1.1" viewbox="0 0 160 45" width="100%" x="0px" xmlns="http://www.w3.org/2000/svg" y="0px">
+       <ellipse cx="80" cy="23" fill="#336699" rx="78" ry="20">
+       </ellipse>
+       <text fill="white" font-family="Verdana" font-size="15" font-weight="bold" text-anchor="middle" x="80" y="28">
+        webprincipal.com
+       </text>
+      </svg>
+     </div>
+    </a>
+   </div>
+   <div class="icon-buscar">
+    <a class="mostrarbusqueda">
+     <div class="icon-search">
+      <svg height="45px" id="Capa_1" style="enable-background:new 0 0 511.999 511.999;" version="1.1" viewbox="0 0 511.999 511.999" width="45px" x="0px" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" y="0px">
+       <g>
+        <path d="M496.131,435.698L374.855,332.551c-12.537-11.283-25.945-16.463-36.777-15.963C366.707,283.055,384,239.549,384,192
+	C384,85.961,298.039,0,192,0C85.962,0,0,85.961,0,192s85.961,192,192,192c47.549,0,91.055-17.293,124.588-45.922
+	c-0.5,10.831,4.68,24.238,15.963,36.775L435.697,496.13c17.662,19.623,46.512,21.277,64.109,3.678
+	C517.406,482.209,515.754,453.359,496.131,435.698z M192,320c-70.692,0-128-57.309-128-128c0-70.692,57.308-128,128-128
+	c70.691,0,128,57.308,128,128C320,262.691,262.693,320,192,320z" fill="#ffffff">
+        </path>
+       </g>
+      </svg>
+     </div>
+    </a>
+   </div>
+  </header>
+  <section class="seccionsiguiente">
+   <div class="searchForm">
+    <form name="form">
+     <input name="texto" onfocus="if (this.value=='Escribe texto a buscar') this.value='';" type="text" value="Escribe texto a buscar"/>
+     <select id="buscador" name="buscador">
+      <option value="https://www.google.com/search?hl=es&amp;lr=lang_es&amp;q=">
+       Google
+      </option>
+      <option value="https://es.search.yahoo.com/search?p=">
+       Yahoo
+      </option>
+      <option value="https://www.bing.com/search?q=">
+       Bing
+      </option>
+      <option value="https://www.google.es/search?tbm=isch&amp;q=">
+       Imágenes
+      </option>
+     </select>
+     <a class="botonenlace" href="javascript:Buscar(this.form)">
+      Buscar
+     </a>
+    </form>
+    <!--
+<div id="mensajes">
+<a class="botonenlace" href="https://boards.melodysoft.com/miquiniela/" target="_blank">MENSAJES</a>
+</div>
+-->
+    <div id="equipos">
+     <select id="selequipos" name="selequipos" onchange="if (this.options[this.selectedIndex].value!='') window.open(this.options[this.selectedIndex].value,'_blank')">
+      <option class="ocultar" disabled="" selected="" value="">
+       Equipos
+      </option>
+      <option class="titulo" disabled="" value="">
+       ---1ª División--
+      </option>
+      <option value="https://www.deportivoalaves.com/es/">
+       Alaves
+      </option>
+      <option value="https://www.athletic-club.eus/">
+       Athletic Bilbao
+      </option>
+      <option value="https://www.atleticodemadrid.com/">
+       Atletico Madrid
+      </option>
+      <option value="https://www.fcbarcelona.es/es/">
+       Barcelona
+      </option>
+      <option value="https://www.realbetisbalompie.es/">
+       Betis
+      </option>
+      <option value="https://rccelta.es/">
+       Celta de Vigo
+      </option>
+      <option value="https://www.elchecf.es/">
+       Elche
+      </option>
+      <option value="https://www.rcdespanyol.com/">
+       Espanyol
+      </option>
+      <option value="https://www.getafecf.com/">
+       Getafe
+      </option>
+      <option value="https://www.gironafc.cat/es">
+       Girona
+      </option>
+      <option value="https://www.levanteud.com/">
+       Levante
+      </option>
+      <option value="https://www.rcdmallorca.es/">
+       Mallorca
+      </option>
+      <option value="https://www.osasuna.es/">
+       Osasuna
+      </option>
+      <option value="https://www.realoviedo.es/">
+       Oviedo
+      </option>
+      <option value="https://www.rayovallecano.es/">
+       Rayo Vallecano
+      </option>
+      <option value="https://www.realmadrid.com/es-ES">
+       Real Madrid
+      </option>
+      <option value="https://www.realsociedad.eus/">
+       Real Sociedad
+      </option>
+      <option value="https://sevillafc.es/">
+       Sevilla
+      </option>
+      <option value="https://www.valenciacf.com/">
+       Valencia
+      </option>
+      <option value="https://villarrealcf.es/">
+       Villarreal
+      </option>
+      <option class="titulo" disabled="" value="">
+       ---2ª División--
+      </option>
+      <option value="https://www.albacetebalompie.es/">
+       Albacete
+      </option>
+      <option value="https://www.udalmeriasad.com/">
+       Almeria
+      </option>
+      <option value="https://www.fcandorra.com/es">
+       Andorra
+      </option>
+      <option value="https://www.burgoscf.es/">
+       Burgos
+      </option>
+      <option value="https://www.cadizcf.com/">
+       Cadiz
+      </option>
+      <option value="https://www.cdcastellon.com/">
+       Castellon
+      </option>
+      <option value="https://adceutafc.com/">
+       Ceuta
+      </option>
+      <option value="https://cordobacf.com/">
+       Cordoba
+      </option>
+      <option value="https://cydleonesa.com/">
+       Cultural Leonesa
+      </option>
+      <option value="https://www.rcdeportivo.es/">
+       Deportivo
+      </option>
+      <option value="https://www.sdeibar.com/">
+       Eibar
+      </option>
+      <option value="https://www.granadacf.es/">
+       Granada
+      </option>
+      <option value="https://www.sdhuesca.es/">
+       Huesca
+      </option>
+      <option value="https://www.udlaspalmas.es/">
+       Las Palmas
+      </option>
+      <option value="https://www.cdleganes.com/">
+       Leganes
+      </option>
+      <option value="https://www.malagacf.com/">
+       Malaga
+      </option>
+      <option value="https://www.cdmirandes.com/">
+       Mirandes
+      </option>
+      <option value="https://www.realracingclub.es/">
+       Racing Santander
+      </option>
+      <option value="https://www.realsociedad.eus/">
+       Real Sociedad B
+      </option>
+      <option value="https://www.realsporting.com/">
+       Sporting Gijon
+      </option>
+      <option value="https://www.realvalladolid.es/">
+       Valladolid
+      </option>
+      <option value="https://www.realzaragoza.com/">
+       Zaragoza
+      </option>
+     </select>
+     <div id="botonir">
+      <a class="botonenlace" href="javascript:cargarequipo()">
+       Ir
+      </a>
+     </div>
+    </div>
+   </div>
+   <div class="nuevalinea">
+   </div>
+  </section>
+  <nav>
+   <div class="menu-lateral" id="menulateral">
+    <ul class="menulateralprincipal">
+     <li class="titulo" id="menufutbol">
+      Futbol
+      <i>
+      </i>
+      <ul class="sub-menu">
+       <li>
+        <a href="https://www.webprincipal.com/futbol/liga2025/division1/clasificacion1.php" target="_parent">
+         Primera Division
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/futbol/liga2025/division2/clasificacion2.php" target="_parent">
+         Segunda Division
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/futbol/liga2025/primera-division-rfef/primera-division-rfef.php" target="_parent">
+         Otras Ligas España
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/futbol/liga2025/copadelrey/copadelrey.php" target="_parent">
+         Copa del Rey
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/futbol/liga2025/champions/champions.php" target="_parent">
+         UEFA Champions League
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/futbol/liga2025/uefa/uefa.php" target="_parent">
+         UEFA Europa League
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/futbol/liga2025/conference-league/conference-league.php" target="_parent">
+         Conference League
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/futbol/liga2025/mundial-clubes/mundialclubes.php" target="_parent">
+         Mundial Clubes 2025
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/futbol/liga2024/eurocopa/eurocopa.php" target="_parent">
+         Eurocopa 2024
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/futbol/liga2022/mundial/mundial.php" target="_parent">
+         Mundial Qatar 2022
+        </a>
+       </li>
+       <!--
+<li><a class="destacar" href="https://www.webprincipal.com/futbol/partidos-jornada/partidos-jornada.php" target="_parent">Partidos futbol hoy</a></li>
+-->
+       <li>
+        <a class="destacar" href="https://www.soccerstats247.com/" target="_blank">
+         Partidos futbol hoy
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/futbol/palmares/palmarescopadelrey.php" target="_parent">
+         Nacionales
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/futbol/palmares/palmarescopaeuropa.php" target="_parent">
+         Internacionales
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/futbol/palmares/palmareseurocopa.php" target="_parent">
+         La Seleccion
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/futbol/enfrentamientos/buscarenfrentamientos.php" target="_parent">
+         Info Enfrentamientos
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/futbol/competicionesdelmundo/competiciones_futbol_ligas_populares.php" target="_parent">
+         Competiciones Mundo
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/futbol/equiposdelmundo/equipos_futbol_europa.php" target="_parent">
+         Equipos en el Mundo
+        </a>
+       </li>
+      </ul>
+     </li>
+     <li class="titulo" id="menuquiniela">
+      Quiniela
+      <i>
+      </i>
+      <ul class="sub-menu">
+       <li>
+        <a href="https://www.webprincipal.com/quiniela/quiniela.php" target="_parent">
+         Calcular Quiniela
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/quiniela/estadisticasquiniela.php" target="_parent">
+         Estadísticas
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/quiniela/ayudaquiniela.php" target="_parent">
+         Ayuda Quiniela
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/quiniela/analisismatematicoquiniela.php" target="_parent">
+         Analisis Matematico
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/quiniela/calcularreduccionesquiniela.php" target="_parent">
+         Calcular reducciones
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/quiniela/analisiscondicionesquiniela.php" target="_parent">
+         Condiciones Quiniela
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/quiniela/historiaquiniela.php" target="_parent">
+         Historia Quiniela
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/quiniela/resultadosultimosorteoquiniela.php" target="_parent">
+         Resultados Quiniela
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/quiniela/comprobar-qr-quiniela.php" target="_parent">
+         Comprobar codigo QR
+        </a>
+       </li>
+      </ul>
+     </li>
+     <li class="titulo" id="menuquinigol">
+      Quinigol
+      <i>
+      </i>
+      <ul class="sub-menu">
+       <li>
+        <a href="https://www.webprincipal.com/quinigol/quinigol.php" target="_parent">
+         Calcular Quinigol
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/quinigol/estadisticasquinigol.php" target="_parent">
+         Estadísticas
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/quinigol/ayudaquinigol.php" target="_parent">
+         Ayuda Quinigol
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/quinigol/analisismatematicoquinigol.php" target="_parent">
+         Analisis Matematico
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/quinigol/calcularreduccionesquinigol.php" target="_parent">
+         Calcular reducciones
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/quinigol/analisiscondicionesquinigol.php" target="_parent">
+         Condiciones Quinigol
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/quinigol/resultadosultimosorteoquinigol.php" target="_parent">
+         Resultados Quinigol
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/quinigol/comprobar-qr-quinigol.php" target="_parent">
+         Comprobar codigo QR
+        </a>
+       </li>
+      </ul>
+     </li>
+     <li class="titulo" id="menuprimitiva">
+      Primitiva/Bonoloto
+      <i>
+      </i>
+      <ul class="sub-menu">
+       <li>
+        <a href="https://www.webprincipal.com/primitiva/primitiva.php" target="_parent">
+         Calcular Numeros
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/primitiva/ayudaprimitiva.php" target="_parent">
+         Ayuda Primitiva
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/primitiva/analisismatematicoprimitiva.php" target="_parent">
+         Analisis matematico
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/primitiva/calcularreduccionesprimitiva.php" target="_parent">
+         Calcular reducciones
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/primitiva/analisiscondicionesprimitiva.php" target="_parent">
+         Condiciones primitiva
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/primitiva/analisiscondicionesbonoloto.php" target="_parent">
+         Condiciones bonoloto
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/primitiva/analisiscondicionesconjunta.php" target="_parent">
+         Condiciones conjunta
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/primitiva/estadisticasprimitiva.php" target="_parent">
+         Estadísticas Primitiva
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/primitiva/estadisticasbonoloto.php" target="_parent">
+         Estadísticas Bonoloto
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/primitiva/estadisticasconjunta.php" target="_parent">
+         Estadísticas Conjunta
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/primitiva/resultadosultimosorteoprimitiva.php" target="_parent">
+         Resultados Primitiva
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/primitiva/resultadosultimosorteobonoloto.php" target="_parent">
+         Resultados Bonoloto
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/primitiva/comprobar-qr-primitiva.php" target="_parent">
+         Comprobar codigo QR
+        </a>
+       </li>
+      </ul>
+     </li>
+     <li class="titulo" id="menueuromillones">
+      Euromillones
+      <i>
+      </i>
+      <ul class="sub-menu">
+       <li>
+        <a href="https://www.webprincipal.com/euromillones/euromillones.php" target="_parent">
+         Calcular Numeros
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/euromillones/ayudaeuromillones.php" target="_parent">
+         Ayuda Euromillones
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/euromillones/analisismatematicoeuromillones.php" target="_parent">
+         Analisis matematico
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/euromillones/calcularreduccioneseuromillones.php" target="_parent">
+         Calcular reducciones
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/euromillones/analisiscondicioneseuromillones.php" target="_parent">
+         Condiciones
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/euromillones/estadisticaseuromillones.php" target="_parent">
+         Estadísticas
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/euromillones/resultadosultimosorteoeuromillones.php" target="_parent">
+         Resultados Euromillones
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/euromillones/comprobar-qr-euromillones.php" target="_parent">
+         Comprobar codigo QR
+        </a>
+       </li>
+      </ul>
+     </li>
+     <li class="titulo" id="menueurodreams">
+      Eurodreams
+      <i>
+      </i>
+      <ul class="sub-menu">
+       <li>
+        <a href="https://www.webprincipal.com/eurodreams/eurodreams.php" target="_parent">
+         Calcular Numeros
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/eurodreams/ayudaeurodreams.php" target="_parent">
+         Ayuda Eurodreams
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/eurodreams/analisismatematicoeurodreams.php" target="_parent">
+         Analisis matematico
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/eurodreams/calcularreduccioneseurodreams.php" target="_parent">
+         Calcular reducciones
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/eurodreams/analisiscondicioneseurodreams.php" target="_parent">
+         Condiciones
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/eurodreams/estadisticaseurodreams.php" target="_parent">
+         Estadísticas
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/eurodreams/resultadosultimosorteoeurodreams.php" target="_parent">
+         Resultados Eurodreams
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/eurodreams/comprobar-qr-eurodreams.php" target="_parent">
+         Comprobar codigo QR
+        </a>
+       </li>
+      </ul>
+     </li>
+     <li class="titulo" id="menugordo">
+      Gordo Primitiva
+      <i>
+      </i>
+      <ul class="sub-menu">
+       <li>
+        <a href="https://www.webprincipal.com/gordoprimitiva/gordoprimitiva.php" target="_parent">
+         Calcular Numeros
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/gordoprimitiva/ayudagordoprimitiva.php" target="_parent">
+         Ayuda GordoPrimitiva
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/gordoprimitiva/analisismatematicogordoprimitiva.php" target="_parent">
+         Analisis matematico
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/gordoprimitiva/calcularreduccionesgordoprimitiva.php" target="_parent">
+         Calcular reducciones
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/gordoprimitiva/analisiscondicionesgordoprimitiva.php" target="_parent">
+         Condiciones Gordo
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/gordoprimitiva/estadisticasgordoprimitiva.php" target="_parent">
+         Estadísticas Gordo
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/gordoprimitiva/resultadosultimosorteogordoprimitiva.php" target="_parent">
+         Resultados Gordo
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/gordoprimitiva/comprobar-qr-gordoprimitiva.php" target="_parent">
+         Comprobar codigo QR
+        </a>
+       </li>
+      </ul>
+     </li>
+     <li class="titulo" id="menumedios">
+      Medios Comunicacion
+      <i>
+      </i>
+      <ul class="sub-menu">
+       <li>
+        <a href="https://www.webprincipal.com/mediosdecomunicacion/agenciasnoticias.php" target="_parent">
+         Agencias Noticias
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/mediosdecomunicacion/boletinesoficiales.php" target="_parent">
+         Boletines Oficiales
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/mediosdecomunicacion/prensadiaria.php" target="_parent">
+         Prensa Diaria
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/mediosdecomunicacion/prensadeportiva.php" target="_parent">
+         Prensa Deportiva
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/mediosdecomunicacion/prensaeconomica.php" target="_parent">
+         Prensa Economica
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/mediosdecomunicacion/prensarosa.php" target="_parent">
+         Prensa Rosa
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/mediosdecomunicacion/revistasgenerales.php" target="_parent">
+         Revistas Generales
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/mediosdecomunicacion/revistasinformatica.php" target="_parent">
+         Revistas Informatica
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/mediosdecomunicacion/revistaselectronica.php" target="_parent">
+         Revistas Electronica
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/mediosdecomunicacion/revistasmusica.php" target="_parent">
+         Revistas Musica
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/mediosdecomunicacion/emisorasradio.php" target="_parent">
+         Emisoras Radio
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/mediosdecomunicacion/emisorastelevision.php" target="_parent">
+         Emisoras Television
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/mediosdecomunicacion/prensauniversitaria.php" target="_parent">
+         Universidad
+        </a>
+       </li>
+      </ul>
+     </li>
+     <li class="titulo" id="menuenlaces">
+      Enlaces
+      <i>
+      </i>
+      <ul class="sub-menu">
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/administracionespublicas.php" target="_parent">
+         Admon. Publicas
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/adultos.php" target="_parent">
+         Adultos
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/automoviles.php" target="_parent">
+         Automoviles
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/bancos.php" target="_parent">
+         Bancos y Cajas
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/deportes.php" target="_parent">
+         Deportes
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/humorybromas.php" target="_parent">
+         Humor y Bromas
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/internet.php" target="_parent">
+         Internet
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/juegos.php" target="_parent">
+         Juegos
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/linux.php" target="_parent">
+         Linux
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/manuales.php" target="_parent">
+         Manuales
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/moviles.php" target="_parent">
+         Moviles
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/musica.php" target="_parent">
+         Musica
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/ocioycine.php" target="_parent">
+         Ocio y Cine
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/software.php" target="_parent">
+         Software
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/tiendasycompras.php" target="_parent">
+         Tiendas y Compras
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/trabajos.php" target="_parent">
+         Trabajo y Empleo
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/turismo.php" target="_parent">
+         Turismo y Viajar
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/enlaces/universidades.php" target="_parent">
+         Universidades
+        </a>
+       </li>
+      </ul>
+     </li>
+     <li class="titulo" id="menuutilidades">
+      Utilidades
+      <i>
+      </i>
+      <ul class="sub-menu">
+       <li>
+        <a href="https://www.webprincipal.com/utilidades/noticias/noticiasportada.php" target="_parent">
+         Noticias Prensa
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/utilidades/almanaque/calendarioperpetuo.php" target="_parent">
+         Calendario Perpetuo
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/utilidades/conversorunidades/conversionunidades.php" target="_parent">
+         Conversion Unidades
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/utilidades/tiempo/tiempo.php" target="_parent">
+         Tiempo
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/utilidades/brujula/brujula.php" target="_parent">
+         Brujula
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/utilidades/level/level.php" target="_parent">
+         Niveles
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/utilidades/distancias/distancias.php" target="_parent">
+         Distancia y Altura
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/juegos/juegos.php" target="_parent">
+         Juegos
+        </a>
+       </li>
+       <li>
+        <a href="https://www.webprincipal.com/chat/chat.php" target="_parent">
+         Chat
+        </a>
+       </li>
+       <li>
+        <a href="https://webprincipal.com/webcams/espana/webcams-espana.php" target="_parent">
+         Webcams España
+        </a>
+       </li>
+      </ul>
+     </li>
+     <li class="titulo" id="menucontacto">
+      Contacto/Legal
+      <i>
+      </i>
+      <ul class="sub-menu">
+       <li>
+        <a href="https://www.webprincipal.com/politica-de-cookies.php" target="_parent">
+         Politica Cookies
+        </a>
+       </li>
+       <li>
+        <a href="mailto:futbol@webprincipal.com">
+         Enviar email
+        </a>
+       </li>
+      </ul>
+     </li>
+     <li>
+      <a href="https://www.webprincipal.com/utilidades/distancias/distancias.php" target="_parent">
+      </a>
+     </li>
+    </ul>
+    <br/>
+    <br/>
+   </div>
+  </nav>
+  <div id="contenido" name="contenido">
+   <div id="temporada1x2">
+   </div>
+   <div id="divpartidosquiniela">
+    <div id="titulosopciones">
+     <table class="tituloopciones">
+      <td class="margen">
+      </td>
+      <td class="opcionactual" id="opcionpronostico">
+       PRONOSTICO
+      </td>
+      <td id="opciongrupos">
+       GRUPOS
+      </td>
+     </table>
+    </div>
+    <div id="tablapartidos">
+    </div>
+    <div id="tablaresultados">
+    </div>
+    <div id="tablapronostico">
+    </div>
+    <div id="tablaprobabilidades">
+    </div>
+    <div id="tablagrupo">
+    </div>
+    <div id="tablagrupos">
+     <table class="tablagrupos">
+      <tr>
+       <th colspan="7">
+        GRUPOS
+       </th>
+      </tr>
+      <tr>
+       <td onclick="seleccionargrupo(0)">
+        1
+       </td>
+       <td onclick="seleccionargrupo(1)">
+        2
+       </td>
+       <td onclick="seleccionargrupo(2)">
+        3
+       </td>
+       <td onclick="seleccionargrupo(3)">
+        4
+       </td>
+      </tr>
+      <tr>
+       <td onclick="seleccionargrupo(4)">
+        5
+       </td>
+       <td onclick="seleccionargrupo(5)">
+        6
+       </td>
+       <td onclick="seleccionargrupo(6)">
+        7
+       </td>
+       <td onclick="seleccionargrupo(7)">
+        8
+       </td>
+      </tr>
+      <tr>
+       <td onclick="seleccionargrupo(8)">
+        9
+       </td>
+       <td onclick="seleccionargrupo(9)">
+        10
+       </td>
+       <td onclick="seleccionargrupo(10)">
+        11
+       </td>
+       <td onclick="seleccionargrupo(11)">
+        12
+       </td>
+      </tr>
+      <tr>
+       <td onclick="seleccionargrupo(12)">
+        13
+       </td>
+       <td onclick="seleccionargrupo(13)">
+        14
+       </td>
+       <td onclick="seleccionargrupo(14)">
+        15
+       </td>
+       <td onclick="seleccionargrupo(15)">
+        16
+       </td>
+      </tr>
+      <tr>
+       <td onclick="seleccionargrupo(16)">
+        17
+       </td>
+       <td onclick="seleccionargrupo(17)">
+        18
+       </td>
+       <td onclick="seleccionargrupo(18)">
+        19
+       </td>
+       <td onclick="seleccionargrupo(19)">
+        20
+       </td>
+      </tr>
+      <tr>
+       <td onclick="seleccionargrupo(20)">
+        21
+       </td>
+       <td onclick="seleccionargrupo(21)">
+        22
+       </td>
+       <td onclick="seleccionargrupo(22)">
+        23
+       </td>
+       <td onclick="seleccionargrupo(23)">
+        24
+       </td>
+      </tr>
+      <tr>
+       <td onclick="seleccionargrupo(24)">
+        25
+       </td>
+       <td onclick="seleccionargrupo(25)">
+        26
+       </td>
+       <td onclick="seleccionargrupo(26)">
+        27
+       </td>
+       <td onclick="seleccionargrupo(27)">
+        28
+       </td>
+      </tr>
+      <tr>
+       <td onclick="seleccionargrupo(28)">
+        29
+       </td>
+       <td onclick="seleccionargrupo(29)">
+        30
+       </td>
+       <td onclick="seleccionargrupo(30)">
+        31
+       </td>
+       <td onclick="seleccionargrupo(31)">
+        32
+       </td>
+      </tr>
+      <tr>
+       <td onclick="seleccionargrupo(32)">
+        33
+       </td>
+       <td onclick="seleccionargrupo(33)">
+        34
+       </td>
+       <td onclick="seleccionargrupo(34)">
+        35
+       </td>
+       <td onclick="seleccionargrupo(35)">
+        36
+       </td>
+      </tr>
+      <tr>
+       <td onclick="seleccionargrupo(36)">
+        37
+       </td>
+       <td onclick="seleccionargrupo(37)">
+        38
+       </td>
+       <td onclick="seleccionargrupo(38)">
+        39
+       </td>
+       <td onclick="seleccionargrupo(39)">
+        40
+       </td>
+      </tr>
+      <tr>
+       <td onclick="seleccionargrupo(40)">
+        41
+       </td>
+       <td onclick="seleccionargrupo(41)">
+        42
+       </td>
+       <td onclick="seleccionargrupo(42)">
+        43
+       </td>
+       <td onclick="seleccionargrupo(43)">
+        44
+       </td>
+      </tr>
+      <tr>
+       <td onclick="seleccionargrupo(44)">
+        45
+       </td>
+       <td onclick="seleccionargrupo(45)">
+        46
+       </td>
+       <td onclick="seleccionargrupo(46)">
+        47
+       </td>
+       <td onclick="seleccionargrupo(47)">
+        48
+       </td>
+      </tr>
+      <tr>
+       <td onclick="seleccionargrupo(48)">
+        49
+       </td>
+      </tr>
+     </table>
+     <table class="condicionesp">
+      <tr>
+       <th colspan="2">
+        Aciertos
+       </th>
+      </tr>
+      <tr>
+       <td class="titcondi2">
+        Min:
+        <input class="titcondi3" id="gruposminaciertos" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+       </td>
+      </tr>
+      <tr>
+       <td class="titcondi2">
+        Max:
+        <input class="titcondi3" id="gruposmaxaciertos" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="14"/>
+       </td>
+      </tr>
+      <tr>
+       <td>
+       </td>
+      </tr>
+     </table>
+    </div>
+   </div>
+   <div class="nuevalinea">
+   </div>
+   <div id="tablaacertantes">
+   </div>
+   <div id="filtrosdatos">
+    <table class="tablafiltros left">
+     <tr>
+      <th colspan="5">
+       SELECCIONAR REDUCCION
+      </th>
+     </tr>
+     <tr>
+      <td class="titcondi2">
+       <input name="Reduccion" type="RADIO" value="14"/>
+       14
+      </td>
+      <td class="titcondi2">
+       <input name="Reduccion" type="RADIO" value="13"/>
+       13
+      </td>
+      <td class="titcondi2">
+       <input name="Reduccion" type="RADIO" value="12"/>
+       12
+      </td>
+      <td class="titcondi2">
+       <input checked="" name="Reduccion" type="RADIO" value="11"/>
+       11
+      </td>
+      <td class="titcondi2">
+       <input name="Reduccion" type="RADIO" value="10"/>
+       10
+      </td>
+     </tr>
+    </table>
+    <table class="tablafiltros left">
+     <tr>
+      <th colspan="2">
+       Nº triples y dobles
+      </th>
+     </tr>
+     <tr>
+      <td class="titcondi2">
+       Triples:
+       <input class="titcondi3" id="ETriples" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="6"/>
+      </td>
+      <td class="titcondi2">
+       Dobles:
+       <input class="titcondi3" id="EDobles" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="6"/>
+      </td>
+     </tr>
+    </table>
+   </div>
+   <span class="botones">
+    <center>
+     <input class="tipoboton" onclick="GenerarQuiniela()" type="BUTTON" value="Quiniela Base"/>
+     <input class="tipoboton menor" onclick="Generar14()" type="BUTTON" value="14 Triples"/>
+     <input class="tipoboton" onclick="Recomendadas()" type="BUTTON" value="Recomendadas"/>
+     <input class="tipoboton mayor" onclick="GenerarApuestas()" type="BUTTON" value="Generar Apuestas"/>
+     <input class="tipoboton" onclick="BorrarGrupos()" type="BUTTON" value="Borrar Grupos"/>
+    </center>
+   </span>
+   <div id="resultados">
+   </div>
+   <br/>
+   <br/>
+   <div id="condicionesdatos">
+    <h1 class="titulofiltros">
+     CONDICIONES PARA LA QUINIELA
+    </h1>
+    <span class="titulofiltros">
+     NºVariantes, Equis y Doses
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      Variantes:
+     </span>
+     Min:
+     <input class="titcondi3" id="numminvar" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="5"/>
+     Max:
+     <input class="titcondi3" id="nummaxvar" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="9"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      Equis:
+     </span>
+     Min:
+     <input class="titcondi3" id="numminX" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="2"/>
+     Max:
+     <input class="titcondi3" id="nummaxX" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="6"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      Doses:
+     </span>
+     Min:
+     <input class="titcondi3" id="nummin2" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+     Max:
+     <input class="titcondi3" id="nummax2" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="5"/>
+    </span>
+    <span class="titulofiltros">
+     Signos Seguidos
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      Variantes:
+     </span>
+     Min:
+     <input class="titcondi3" id="numminsegvar" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="2"/>
+     Max:
+     <input class="titcondi3" id="nummaxsegvar" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="5"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      Unos:
+     </span>
+     Min:
+     <input class="titcondi3" id="numminseg1" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="2"/>
+     Max:
+     <input class="titcondi3" id="nummaxseg1" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="4"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      Equis:
+     </span>
+     Min:
+     <input class="titcondi3" id="numminsegx" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+     Max:
+     <input class="titcondi3" id="nummaxsegx" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="3"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      Doses:
+     </span>
+     Min:
+     <input class="titcondi3" id="numminseg2" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+     Max:
+     <input class="titcondi3" id="nummaxseg2" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="3"/>
+    </span>
+    <span class="titulofiltros">
+     Nº Interrupciones
+    </span>
+    <span class="opcionfiltros nosalto">
+     Min:
+     <input class="titcondi3" id="nummininterrupciones" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="6"/>
+     Max:
+     <input class="titcondi3" id="nummaxinterrupciones" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="10"/>
+    </span>
+    <span class="titulofiltros">
+     Sumas Probabilidades
+    </span>
+    <span class="opcionfiltros nosalto">
+     Min:
+     <input class="titcondi4" id="numminsumas" onfocus="this.select();" onmouseup="return false;" size="4" type="number" value="400"/>
+     Max:
+     <input class="titcondi4" id="nummaxsumas" onfocus="this.select();" onmouseup="return false;" size="4" type="number" value="700"/>
+    </span>
+    <span class="titulofiltros">
+     Parejas
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      11:
+     </span>
+     Min:
+     <input class="titcondi3" id="minpareja11" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+     Max:
+     <input class="titcondi3" id="maxpareja11" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="5"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      1X:
+     </span>
+     Min:
+     <input class="titcondi3" id="minpareja1X" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxpareja1X" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="3"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      12:
+     </span>
+     Min:
+     <input class="titcondi3" id="minpareja12" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxpareja12" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="3"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      X1:
+     </span>
+     Min:
+     <input class="titcondi3" id="minparejaX1" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxparejaX1" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="3"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      XX:
+     </span>
+     Min:
+     <input class="titcondi3" id="minparejaXX" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxparejaXX" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="3"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      X2:
+     </span>
+     Min:
+     <input class="titcondi3" id="minparejaX2" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxparejaX2" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="2"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      21:
+     </span>
+     Min:
+     <input class="titcondi3" id="minpareja21" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxpareja21" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="3"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      2X:
+     </span>
+     Min:
+     <input class="titcondi3" id="minpareja2X" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxpareja2X" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="2"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      22:
+     </span>
+     Min:
+     <input class="titcondi3" id="minpareja22" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxpareja22" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="2"/>
+    </span>
+    <span class="titulofiltros">
+     Tríos
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      111:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio111" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio111" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="3"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      11X:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio11X" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio11X" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="2"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      112:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio112" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio112" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="2"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      1X1:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio1X1" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio1X1" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="2"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      1XX:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio1XX" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio1XX" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      1X2:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio1X2" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio1X2" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      121:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio121" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio121" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="2"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      12X:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio12X" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio12X" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      122:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio122" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio122" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      X11:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrioX11" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrioX11" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="2"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      X1X:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrioX1X" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrioX1X" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      X12:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrioX12" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrioX12" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      XX1:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrioXX1" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrioXX1" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      XXX:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrioXXX" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrioXXX" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      XX2:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrioXX2" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrioXX2" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      X21:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrioX21" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrioX21" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      X2X:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrioX2X" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrioX2X" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      X22:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrioX22" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrioX22" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      211:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio211" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio211" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="2"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      21X:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio21X" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio21X" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      212:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio212" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio212" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      2X1:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio2X1" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio2X1" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      2XX:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio2XX" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio2XX" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      2X2:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio2X2" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio2X2" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      221:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio221" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio221" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      22X:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio22X" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio22X" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+    <span class="opcionfiltros nosalto">
+     <span class="tituloopcion">
+      222:
+     </span>
+     Min:
+     <input class="titcondi3" id="mintrio222" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="0"/>
+     Max:
+     <input class="titcondi3" id="maxtrio222" onfocus="this.select();" onmouseup="return false;" size="2" type="number" value="1"/>
+    </span>
+   </div>
+   <form action="calcularapuestasquiniela.php" id="calcularapuestas" method="post" name="calcularapuestas" target="_blank">
+    <div id="lcalcularapuestas">
+    </div>
+   </form>
+   <form action="apuestasrecomendadas.php" id="apuestasrecomendadas" method="post" name="apuestasrecomendadas" target="_blank">
+    <div id="lapuestasrecomendadas">
+    </div>
+   </form>
+  </div>
+  <div id="secundario">
+  </div>
+  <div id="pie">
+   <br/>
+   <br/>
+   ©
+   <b>
+    <a href="http://www.webprincipal.com/">
+     www.webprincipal.com - La quiniela, futbol y apuestas deportivas
+    </a>
+   </b>
+  </div>
+  <div id="ventanaaceptarcookies">
+   <div class="logowebprincipal">
+    <svg height="45px" id="logowebprincipal" version="1.1" viewbox="0 0 160 45" width="100%" x="0px" xmlns="http://www.w3.org/2000/svg" y="0px">
+     <ellipse cx="80" cy="23" fill="#336699" rx="78" ry="20">
+     </ellipse>
+     <text fill="white" font-family="Verdana" font-size="15" font-weight="bold" text-anchor="middle" x="80" y="28">
+      webprincipal.com
+     </text>
+    </svg>
+   </div>
+   <h3>
+    Aceptación de cookies
+   </h3>
+   <p>
+    Utilizamos cookies propias y de terceros para mejorar nuestros servicios y para fines analíticos y mostrarte publicidad 
+personalizada a partir de tus hábitos de navegación y preferencias. Puedes configurar tus preferencias en el botón
+CONFIGURAR. Puedes encontrar más detalles de nuestra política de cookies
+    <a href="//www.webprincipal.com/politica-de-cookies.php">
+     AQUÍ.
+    </a>
+   </p>
+   <div class="botonescookies">
+    <button id="botonconfigurarcookies">
+     CONFIGURAR
+    </button>
+    <button id="botonaceptarcookies">
+     ACEPTAR Y CERRAR
+    </button>
+   </div>
+  </div>
+  <div aria-hidden="true" class="modal" id="ventanaconfigurarcookies" role="dialog" tabindex="-1">
+   <div class="logowebprincipal modal-header">
+    <svg height="45px" id="logowebprincipal" version="1.1" viewbox="0 0 160 45" width="100%" x="0px" xmlns="http://www.w3.org/2000/svg" y="0px">
+     <ellipse cx="80" cy="23" fill="#336699" rx="78" ry="20">
+     </ellipse>
+     <text fill="white" font-family="Verdana" font-size="15" font-weight="bold" text-anchor="middle" x="80" y="28">
+      webprincipal.com
+     </text>
+    </svg>
+   </div>
+   <div class="modal-body">
+    <h3>
+     Configuración de cookies
+    </h3>
+    <p>
+     Este sitio web utiliza cookies tanto propias como de terceros que se usan para proporcionarte una experiencia web mas
+personalizada. En el siguiente panel de configuracion puedes escoger permitirnos el uso de ciertas cookies de forma
+diferenciada clasificadas en funcion de su finalidad. Haciendo click en cada categoria encontraras informacion
+adicional sobre su finalidad y funcionamiento. Rechazar ciertas cookies puede afectar a tu experiencia en el sitio web.
+     <a href="//www.webprincipal.com/politica-de-cookies.php">
+      Más información
+     </a>
+    </p>
+    <button id="botonpermitirlastodas">
+     Permitirlas todas
+    </button>
+    <section class="gestionarpreferencias" id="onetrust-pc-sdk">
+     <h3>
+      Gestionar preferencias de cookies
+     </h3>
+     <div class="ot-accordion-layout ot-cat-item">
+      <input type="checkbox"/>
+      <!-- Accordion header -->
+      <div class="ot-acc-hdr ot-always-active-group">
+       <div class="ot-plus-minus">
+        <span>
+        </span>
+        <span>
+        </span>
+       </div>
+       <h4 class="ot-cat-header">
+        Cookies técnicas
+       </h4>
+       <div class="ot-always-active">
+        Activas siempre
+       </div>
+      </div>
+      <!-- accordion detail -->
+      <div class="ot-acc-grpcntr ot-acc-txt">
+       <p class="ot-acc-grpdesc">
+        Estas cookies son necesarias para la navegación a traves del sitio web y no se pueden desactivar. Se utilizan para
+identificar la sesi&amp;oaucten y tus preferencias. Estas cookies non guardan ninguna información personal que te identifique
+y sin ellas algunas partes del sitio web no funcionarán.
+       </p>
+      </div>
+     </div>
+     <div class="ot-accordion-layout ot-cat-item">
+      <input type="checkbox"/>
+      <!-- Accordion header -->
+      <div class="ot-acc-hdr">
+       <div class="ot-plus-minus">
+        <span>
+        </span>
+        <span>
+        </span>
+       </div>
+       <h4 class="ot-cat-header">
+        Cookies de personalización
+       </h4>
+       <div class="ot-tgl">
+        <input id="ot-group-id-2" name="ot-group-id-2" type="checkbox"/>
+        <label class="ot-switch" for="ot-group-id-2">
+         <span class="ot-switch-nob">
+         </span>
+        </label>
+       </div>
+      </div>
+      <!-- accordion detail -->
+      <div class="ot-acc-grpcntr ot-acc-txt">
+       <p class="ot-acc-grpdesc">
+        Estas cookies guardan información de tus preferencias en el navegador como por ejemplo el idioma, el tipo de 
+navegador o la configuración regional.
+       </p>
+      </div>
+     </div>
+     <div class="ot-accordion-layout ot-cat-item">
+      <input type="checkbox"/>
+      <!-- Accordion header -->
+      <div class="ot-acc-hdr">
+       <div class="ot-plus-minus">
+        <span>
+        </span>
+        <span>
+        </span>
+       </div>
+       <h4 class="ot-cat-header">
+        Cookies de análisis
+       </h4>
+       <div class="ot-tgl">
+        <input id="ot-group-id-3" name="ot-group-id-3" type="checkbox"/>
+        <label class="ot-switch" for="ot-group-id-3">
+         <span class="ot-switch-nob">
+         </span>
+        </label>
+       </div>
+      </div>
+      <!-- accordion detail -->
+      <div class="ot-acc-grpcntr ot-acc-txt">
+       <p class="ot-acc-grpdesc">
+        Estas cookies nos permiten contar los usuarios, las visitas y realizar análisis estadístico y cuantitativo del uso
+que hacen los usuarios de la web. Por ejemplo nos permiten saber qué páginas son las más populares y cuántas personas
+visitan el sitio. La información que recogen estas cookies es anónima y nos sirve para mejorar la navegación.
+       </p>
+      </div>
+     </div>
+     <div class="ot-accordion-layout ot-cat-item">
+      <input type="checkbox"/>
+      <!-- Accordion header -->
+      <div class="ot-acc-hdr">
+       <div class="ot-plus-minus">
+        <span>
+        </span>
+        <span>
+        </span>
+       </div>
+       <h4 class="ot-cat-header">
+        Cookies publicitarias
+       </h4>
+       <div class="ot-tgl">
+        <input id="ot-group-id-4" name="ot-group-id-4" type="checkbox"/>
+        <label class="ot-switch" for="ot-group-id-4">
+         <span class="ot-switch-nob">
+         </span>
+        </label>
+       </div>
+      </div>
+      <!-- accordion detail -->
+      <div class="ot-acc-grpcntr ot-acc-txt">
+       <p class="ot-acc-grpdesc">
+        Estas cookies nos permiten gestionar de la forma más eficaz posible los espacios publicitarios incluidos en la p´gina 
+web y la frecuencia con la que se muestran los anuncios. La información que recogen estas cookies es anónima y nos 
+sirve para gestionar mejor la publicidad
+       </p>
+      </div>
+     </div>
+     <div class="ot-accordion-layout ot-cat-item">
+      <input type="checkbox"/>
+      <!-- Accordion header -->
+      <div class="ot-acc-hdr">
+       <div class="ot-plus-minus">
+        <span>
+        </span>
+        <span>
+        </span>
+       </div>
+       <h4 class="ot-cat-header">
+        Cookies de publicidad comportamental
+       </h4>
+       <div class="ot-tgl">
+        <input id="ot-group-id-5" name="ot-group-id-5" type="checkbox"/>
+        <label class="ot-switch" for="ot-group-id-5">
+         <span class="ot-switch-nob">
+         </span>
+        </label>
+       </div>
+      </div>
+      <!-- accordion detail -->
+      <div class="ot-acc-grpcntr ot-acc-txt">
+       <p class="ot-acc-grpdesc">
+        Estas cookies nos permiten gestionar de la forma m´s eficaz posible los espacios publicitarios gestionados por
+nuestros socios publicitarios. Estas cookies no almacenan información personal directamente sino que se 
+utilizan para desarrollar un perfil específico y mostrar publicidad en función de sus intereses.
+       </p>
+      </div>
+     </div>
+    </section>
+   </div>
+   <div class="modal-footer">
+    <button id="botonguardarpreferencias">
+     Guardar preferencias
+    </button>
+   </div>
+  </div>
+ </body>
+</html>

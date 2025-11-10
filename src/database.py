@@ -424,6 +424,85 @@ class DatabaseManager:
             return [{'temporada': row[0], 'jornada': row[1], 'fecha': row[2]} 
                     for row in cur.fetchall()]
     
+    def get_top_teams_by_goals(self, limit: int = 10, division: int = 1) -> List[Dict]:
+        """Obtener equipos con más goles históricamente"""
+        table_name = 'primera_division' if division == 1 else 'segunda_division'
+        with self.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(f'''
+                SELECT 
+                    equipo,
+                    SUM(goles) as total_goles,
+                    COUNT(*) as partidos
+                FROM (
+                    SELECT local as equipo, goles_local as goles FROM {table_name} WHERE goles_local IS NOT NULL
+                    UNION ALL
+                    SELECT visitante as equipo, goles_visitante as goles FROM {table_name} WHERE goles_visitante IS NOT NULL
+                )
+                GROUP BY equipo
+                ORDER BY total_goles DESC
+                LIMIT ?
+            ''', (limit,))
+            return [{'equipo': r[0], 'goles': r[1], 'partidos': r[2]} for r in cur.fetchall()]
+    
+    def get_top_teams_by_away_wins(self, limit: int = 10, division: int = 1) -> List[Dict]:
+        """Obtener equipos con más victorias fuera de casa"""
+        table_name = 'primera_division' if division == 1 else 'segunda_division'
+        with self.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(f'''
+                SELECT 
+                    visitante as equipo,
+                    COUNT(*) as victorias_fuera
+                FROM {table_name}
+                WHERE quiniela = '2' AND visitante IS NOT NULL
+                GROUP BY visitante
+                ORDER BY victorias_fuera DESC
+                LIMIT ?
+            ''', (limit,))
+            return [{'equipo': r[0], 'victorias_fuera': r[1]} for r in cur.fetchall()]
+    
+    def get_top_teams_by_losses(self, limit: int = 10, division: int = 1) -> List[Dict]:
+        """Obtener equipos con más derrotas históricamente"""
+        table_name = 'primera_division' if division == 1 else 'segunda_division'
+        with self.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(f'''
+                SELECT 
+                    equipo,
+                    SUM(derrotas) as total_derrotas
+                FROM (
+                    SELECT local as equipo, 
+                           SUM(CASE WHEN quiniela = '2' THEN 1 ELSE 0 END) as derrotas
+                    FROM {table_name} WHERE local IS NOT NULL GROUP BY local
+                    UNION ALL
+                    SELECT visitante as equipo,
+                           SUM(CASE WHEN quiniela = '1' THEN 1 ELSE 0 END) as derrotas
+                    FROM {table_name} WHERE visitante IS NOT NULL GROUP BY visitante
+                )
+                GROUP BY equipo
+                ORDER BY total_derrotas DESC
+                LIMIT ?
+            ''', (limit,))
+            return [{'equipo': r[0], 'derrotas': r[1]} for r in cur.fetchall()]
+    
+    def get_top_teams_by_home_wins(self, limit: int = 10, division: int = 1) -> List[Dict]:
+        """Obtener equipos con más victorias en casa"""
+        table_name = 'primera_division' if division == 1 else 'segunda_division'
+        with self.get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(f'''
+                SELECT 
+                    local as equipo,
+                    COUNT(*) as victorias_casa
+                FROM {table_name}
+                WHERE quiniela = '1' AND local IS NOT NULL
+                GROUP BY local
+                ORDER BY victorias_casa DESC
+                LIMIT ?
+            ''', (limit,))
+            return [{'equipo': r[0], 'victorias_casa': r[1]} for r in cur.fetchall()]
+    
     def get_historical_results(self, temporada: str, jornada: int) -> List[Dict]:
         """Obtener resultados históricos de una jornada específica"""
         with self.get_connection() as conn:

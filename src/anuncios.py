@@ -164,16 +164,25 @@ class PremiumDialog:
         # Crear ventana
         self.window = tk.Toplevel(parent)
         self.window.title("Actualizar a Premium")
-        self.window.geometry("500x600")
+        self.window.geometry("600x700")
         self.window.resizable(False, False)
         self.window.transient(parent)
         self.window.grab_set()
         
         # Centrar ventana
         self.window.update_idletasks()
-        x = (self.window.winfo_screenwidth() // 2) - (500 // 2)
-        y = (self.window.winfo_screenheight() // 2) - (600 // 2)
-        self.window.geometry(f"500x600+{x}+{y}")
+        x = (self.window.winfo_screenwidth() // 2) - (600 // 2)
+        y = (self.window.winfo_screenheight() // 2) - (700 // 2)
+        self.window.geometry(f"600x700+{x}+{y}")
+        
+        # Añadir fondo promocional si existe
+        try:
+            from src.promocional_manager import PromocionalManager
+            from src.config import BASE_DIR
+            promocional_mgr = PromocionalManager(BASE_DIR)
+            promocional_mgr.crear_fondo_promocional(self.window)
+        except Exception as e:
+            logger.debug(f"No se pudo añadir fondo promocional: {e}")
         
         self._crear_ui()
     
@@ -195,10 +204,33 @@ class PremiumDialog:
         main_frame = ttk.Frame(scrollable_frame, padding=20)
         main_frame.pack(fill=tk.BOTH, expand=True)
         
+        # Banner de descuento
+        descuento_frame = ttk.Frame(main_frame)
+        descuento_frame.pack(fill=tk.X, pady=(0, 15))
+        
+        from src.freemium import DESCUENTO_PORCENTAJE
+        descuento_label = ttk.Label(
+            descuento_frame,
+            text=f"🔥 OFERTA ESPECIAL: {int(DESCUENTO_PORCENTAJE * 100)}% DE DESCUENTO PERMANENTE 🔥",
+            font=('Segoe UI', 14, 'bold'),
+            foreground='#FF6B00'
+        )
+        descuento_label.pack(pady=10, padx=10)
+        
+        oferta_text = ttk.Label(
+            descuento_frame,
+            text="Aprovecha la oferta de la semana, un 20% si te haces premium ahora mismo\n"
+                 "y acceso full a todas las opciones que te harán millonario",
+            font=('Segoe UI', 10, 'italic'),
+            justify=tk.CENTER,
+            foreground='#E65100'
+        )
+        oferta_text.pack(pady=(0, 10))
+        
         # Título
         titulo = ttk.Label(
             main_frame,
-            text="Quiniela Premium",
+            text="La quiniela 1X2 - Premium",
             font=('Segoe UI', 18, 'bold')
         )
         titulo.pack(pady=(0, 10))
@@ -238,7 +270,7 @@ class PremiumDialog:
             main_frame,
             "Licencia Vitalicia",
             f"{PRECIO_VIDA}€",
-            "Acceso de por vida",
+            "Acceso de por vida + BBDD histórica GRATIS",
             "vida",
             "Mejor valor"
         )
@@ -340,9 +372,51 @@ class PremiumDialog:
         frame = ttk.LabelFrame(parent, text=titulo, padding=15)
         frame.pack(fill=tk.X, pady=10)
         
-        # Precio destacado
+        # Badge si existe
+        if badge:
+            badge_label = ttk.Label(
+                frame,
+                text=badge,
+                font=('Segoe UI', 9, 'bold'),
+                foreground='white',
+                background='#FF6B00',
+                padding=(5, 2)
+            )
+            badge_label.pack(anchor='e', pady=(0, 5))
+        
+        # Precio destacado con descuento
+        precio_frame = ttk.Frame(frame)
+        precio_frame.pack(pady=5)
+        
+        from src.freemium import PRECIO_SEMANAL_ORIGINAL, PRECIO_TEMPORADA_ORIGINAL, PRECIO_VIDA_ORIGINAL, PRECIO_BBDD_HISTORICA_ORIGINAL
+        
+        precios_originales = {
+            "semanal": PRECIO_SEMANAL_ORIGINAL,
+            "temporada": PRECIO_TEMPORADA_ORIGINAL,
+            "vida": PRECIO_VIDA_ORIGINAL,
+            "bbdd_historica": PRECIO_BBDD_HISTORICA_ORIGINAL
+        }
+        
+        precio_original = precios_originales.get(tipo, 0)
+        if precio_original > 0:
+            precio_antiguo_label = ttk.Label(
+                precio_frame,
+                text=f"{precio_original:.2f}€",
+                font=('Segoe UI', 12),
+                foreground='gray',
+                style='Modern.TLabel'
+            )
+            precio_antiguo_label.pack(side=tk.LEFT, padx=5)
+            # Tachar precio antiguo
+            ttk.Label(
+                precio_frame,
+                text="~~",
+                font=('Segoe UI', 12),
+                foreground='gray'
+            ).pack(side=tk.LEFT)
+        
         precio_label = ttk.Label(
-            frame,
+            precio_frame,
             text=precio,
             font=('Segoe UI', 20, 'bold'),
             foreground='#0078d4'
