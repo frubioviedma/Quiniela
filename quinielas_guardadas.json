@@ -1510,5 +1510,305 @@
         "tipo": "pleno_15"
       }
     ]
+  },
+  {
+    "temporada": "2025-26",
+    "jornada": 18,
+    "fecha_guardado": "2025-11-10T15:01:26.536496",
+    "partidos": [
+      {
+        "num": 1,
+        "local": "CHIPRE",
+        "visitante": "AUSTRIA",
+        "signos": [
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 2,
+        "local": "LIECHTENSTEIN",
+        "visitante": "GALES",
+        "signos": [
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 3,
+        "local": "TURQUIA",
+        "visitante": "BULGARIA",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 4,
+        "local": "BOSNIA HERZEG.",
+        "visitante": "RUMANIA",
+        "signos": [
+          "1",
+          "X",
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 5,
+        "local": "DINAMARCA",
+        "visitante": "BIELORRUSIA",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 6,
+        "local": "GRECIA",
+        "visitante": "ESCOCIA",
+        "signos": [
+          "1",
+          "X",
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 7,
+        "local": "SUIZA",
+        "visitante": "SUECIA",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 8,
+        "local": "HUNGRIA",
+        "visitante": "REP.IRLANDA",
+        "signos": [
+          "1",
+          "X"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 9,
+        "local": "PORTUGAL",
+        "visitante": "ARMENIA",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 10,
+        "local": "ALBANIA",
+        "visitante": "INGLATERRA",
+        "signos": [
+          "1",
+          "X",
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 11,
+        "local": "AZERBAIJAN",
+        "visitante": "FRANCIA",
+        "signos": [
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 12,
+        "local": "SERBIA",
+        "visitante": "LETONIA",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 13,
+        "local": "UCRANIA",
+        "visitante": "ISLANDIA",
+        "signos": [
+          "1",
+          "X"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 14,
+        "local": "ITALIA",
+        "visitante": "NORUEGA",
+        "signos": [
+          "1",
+          "X"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 15,
+        "local": "GEORGIA",
+        "visitante": "ESPAÑA",
+        "signo_local": "2",
+        "signo_visitante": "2",
+        "tipo": "pleno_15"
+      }
+    ]
+  },
+  {
+    "temporada": "2025-26",
+    "jornada": 18,
+    "fecha_guardado": "2025-11-10T15:02:00.625567",
+    "partidos": [
+      {
+        "num": 1,
+        "local": "CHIPRE",
+        "visitante": "AUSTRIA",
+        "signos": [
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 2,
+        "local": "LIECHTENSTEIN",
+        "visitante": "GALES",
+        "signos": [
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 3,
+        "local": "TURQUIA",
+        "visitante": "BULGARIA",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 4,
+        "local": "BOSNIA HERZEG.",
+        "visitante": "RUMANIA",
+        "signos": [
+          "1",
+          "X",
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 5,
+        "local": "DINAMARCA",
+        "visitante": "BIELORRUSIA",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 6,
+        "local": "GRECIA",
+        "visitante": "ESCOCIA",
+        "signos": [
+          "1",
+          "X",
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 7,
+        "local": "SUIZA",
+        "visitante": "SUECIA",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 8,
+        "local": "HUNGRIA",
+        "visitante": "REP.IRLANDA",
+        "signos": [
+          "1",
+          "X"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 9,
+        "local": "PORTUGAL",
+        "visitante": "ARMENIA",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 10,
+        "local": "ALBANIA",
+        "visitante": "INGLATERRA",
+        "signos": [
+          "1",
+          "X",
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 11,
+        "local": "AZERBAIJAN",
+        "visitante": "FRANCIA",
+        "signos": [
+          "2"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 12,
+        "local": "SERBIA",
+        "visitante": "LETONIA",
+        "signos": [
+          "1"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 13,
+        "local": "UCRANIA",
+        "visitante": "ISLANDIA",
+        "signos": [
+          "1",
+          "X"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 14,
+        "local": "ITALIA",
+        "visitante": "NORUEGA",
+        "signos": [
+          "1",
+          "X"
+        ],
+        "tipo": "normal"
+      },
+      {
+        "num": 15,
+        "local": "GEORGIA",
+        "visitante": "ESPAÑA",
+        "signo_local": "2",
+        "signo_visitante": "2",
+        "tipo": "pleno_15"
+      }
+    ]
   }
 ]

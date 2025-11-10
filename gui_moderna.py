@@ -137,6 +137,10 @@ class QuinielaModernaApp:
         # Crear BD
         self.crear_tablas()
         
+        # Inicializar DatabaseManager
+        from src.database import DatabaseManager
+        self.db = DatabaseManager(DB_PATH)
+        
         # Inicializar sistema freemium
         from src.freemium import FreemiumManager
         self.freemium_manager = FreemiumManager()
@@ -735,6 +739,11 @@ class QuinielaModernaApp:
             width = 80 if col == 'Partido' else (200 if col == 'Mi Quiniela' else (200 if col == 'Resultado Real' else 100))
             self.tree_analisis.column(col, width=width, anchor='center')
         
+        # Configurar tags de color
+        self.tree_analisis.tag_configure('acierto', background='#4a2a2a', foreground='#ffffff')  # Rojo oscuro para aciertos
+        self.tree_analisis.tag_configure('error', background='#2a2a2a', foreground='#ff6666')  # Gris oscuro para errores
+        self.tree_analisis.tag_configure('pendiente', background='#2a2a4a', foreground='#ffff99')  # Azul oscuro para pendientes
+        
         scrollbar_analisis = ttk.Scrollbar(tree_frame, orient='vertical', command=self.tree_analisis.yview)
         self.tree_analisis.configure(yscrollcommand=scrollbar_analisis.set)
         
@@ -1328,7 +1337,7 @@ class QuinielaModernaApp:
             
             local = partido.get('local', '')
             visitante = partido.get('visitante', '')
-            temporada = self.temporada_var.get() if hasattr(self, 'temporada_var') else '2025-26'
+            temporada = self.temporada_combo.get() if hasattr(self, 'temporada_combo') else '2025-26'
             
             if not local or not visitante:
                 # Valores por defecto para ambos equipos
@@ -2500,12 +2509,19 @@ class QuinielaModernaApp:
                                 aciertos += 1
                             total += 1
                             
-                            self.tree_analisis.insert('', 'end', values=(
+                            item = self.tree_analisis.insert('', 'end', values=(
                                 f"P-{num}",
                                 mi_quiniela,
                                 resultado_real,
                                 "✅" if acierto else "❌"
                             ))
+                            # Marcar color: rojo para aciertos, gris para errores
+                            if acierto:
+                                self.tree_analisis.set(item, 'Acierto', '✅')
+                                self.tree_analisis.item(item, tags=('acierto',))
+                            else:
+                                self.tree_analisis.set(item, 'Acierto', '❌')
+                                self.tree_analisis.item(item, tags=('error',))
                 else:
                     # Partidos 1-14 - comparar signos 1/X/2
                     signos = partido_data.get('signos', [])
@@ -2543,12 +2559,19 @@ class QuinielaModernaApp:
                                 aciertos += 1
                             total += 1
                             
-                            self.tree_analisis.insert('', 'end', values=(
+                            item = self.tree_analisis.insert('', 'end', values=(
                                 num,
                                 mi_quiniela,
                                 resultado_real,
                                 "✅" if acierto else "❌"
                             ))
+                            # Marcar color: rojo para aciertos, gris para errores
+                            if acierto:
+                                self.tree_analisis.set(item, 'Acierto', '✅')
+                                self.tree_analisis.item(item, tags=('acierto',))
+                            else:
+                                self.tree_analisis.set(item, 'Acierto', '❌')
+                                self.tree_analisis.item(item, tags=('error',))
                         else:
                             # Sin resultado aún (pendiente)
                             local = r.get('local', '')
@@ -2557,12 +2580,15 @@ class QuinielaModernaApp:
                             
                             total += 1
                             
-                            self.tree_analisis.insert('', 'end', values=(
+                            item = self.tree_analisis.insert('', 'end', values=(
                                 num,
                                 mi_quiniela,
                                 resultado_real,
                                 "⏳"  # Pendiente
                             ))
+                            # Marcar como pendiente
+                            self.tree_analisis.set(item, 'Acierto', '⏳')
+                            self.tree_analisis.item(item, tags=('pendiente',))
             
             # Mostrar estadísticas
             porcentaje = (aciertos / total * 100) if total > 0 else 0
