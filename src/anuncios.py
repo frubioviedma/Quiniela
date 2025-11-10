@@ -204,28 +204,64 @@ class PremiumDialog:
         main_frame = ttk.Frame(scrollable_frame, padding=20)
         main_frame.pack(fill=tk.BOTH, expand=True)
         
-        # Banner de descuento
-        descuento_frame = ttk.Frame(main_frame)
-        descuento_frame.pack(fill=tk.X, pady=(0, 15))
+        # Banner de oferta especial - Destacado y atractivo
+        descuento_frame = tk.Frame(main_frame, bg='#FF6B00', relief=tk.RAISED, bd=3)
+        descuento_frame.pack(fill=tk.X, pady=(0, 20), padx=10)
+        
+        # Fondo con gradiente visual (simulado con color sólido)
+        inner_frame = tk.Frame(descuento_frame, bg='#FFF3E0', relief=tk.FLAT)
+        inner_frame.pack(fill=tk.BOTH, expand=True, padx=3, pady=3)
         
         from src.freemium import DESCUENTO_PORCENTAJE
-        descuento_label = ttk.Label(
-            descuento_frame,
-            text=f"🔥 OFERTA ESPECIAL: {int(DESCUENTO_PORCENTAJE * 100)}% DE DESCUENTO PERMANENTE 🔥",
-            font=('Segoe UI', 14, 'bold'),
-            foreground='#FF6B00'
-        )
-        descuento_label.pack(pady=10, padx=10)
+        porcentaje_descuento = int(DESCUENTO_PORCENTAJE * 100)
         
-        oferta_text = ttk.Label(
-            descuento_frame,
-            text="Aprovecha la oferta de la semana, un 20% si te haces premium ahora mismo\n"
-                 "y acceso full a todas las opciones que te harán millonario",
-            font=('Segoe UI', 10, 'italic'),
-            justify=tk.CENTER,
-            foreground='#E65100'
+        # Título principal de la oferta
+        titulo_oferta = tk.Label(
+            inner_frame,
+            text=f"🎉 OFERTA DE LANZAMIENTO - {porcentaje_descuento}% DE DESCUENTO 🎉",
+            font=('Segoe UI', 16, 'bold'),
+            bg='#FFF3E0',
+            fg='#E65100'
         )
-        oferta_text.pack(pady=(0, 10))
+        titulo_oferta.pack(pady=(15, 5), padx=15)
+        
+        # Subtítulo atractivo
+        subtitulo_oferta = tk.Label(
+            inner_frame,
+            text="¡Aprovecha esta oferta limitada!",
+            font=('Segoe UI', 12, 'bold'),
+            bg='#FFF3E0',
+            fg='#FF6B00'
+        )
+        subtitulo_oferta.pack(pady=(0, 10), padx=15)
+        
+        # Mensaje motivador
+        mensaje_oferta = tk.Label(
+            inner_frame,
+            text=f"Todos los planes tienen un {porcentaje_descuento}% de descuento especial.\n"
+                 f"¡No dejes pasar esta oportunidad única de ahorrar!\n"
+                 f"Oferta disponible para los primeros usuarios.",
+            font=('Segoe UI', 10),
+            bg='#FFF3E0',
+            fg='#5D4037',
+            justify=tk.CENTER
+        )
+        mensaje_oferta.pack(pady=(0, 15), padx=15)
+        
+        # Badge de "Oferta limitada"
+        badge_frame = tk.Frame(inner_frame, bg='#FF6B00', relief=tk.RAISED, bd=2)
+        badge_frame.pack(pady=(0, 15), padx=15)
+        
+        badge_text = tk.Label(
+            badge_frame,
+            text="⚡ OFERTA LIMITADA - APROVECHA AHORA ⚡",
+            font=('Segoe UI', 11, 'bold'),
+            bg='#FF6B00',
+            fg='white',
+            padx=20,
+            pady=8
+        )
+        badge_text.pack()
         
         # Título
         titulo = ttk.Label(

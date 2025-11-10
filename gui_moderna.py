@@ -3840,15 +3840,40 @@ class QuinielaModernaApp:
             justify='center'
         ).pack(pady=5)
         
-        # Obtener precio con descuento
-        from src.freemium import PRECIO_BBDD_HISTORICA, PRECIO_BBDD_HISTORICA_ORIGINAL
-        ttk.Label(
-            marco,
-            text=f"Disponible por solo {PRECIO_BBDD_HISTORICA}€ (antes {PRECIO_BBDD_HISTORICA_ORIGINAL}€) - Pago único",
-            style='Modern.TLabel',
+        # Banner de oferta especial para BBDD
+        from src.freemium import PRECIO_BBDD_HISTORICA, PRECIO_BBDD_HISTORICA_ORIGINAL, DESCUENTO_PORCENTAJE
+        
+        oferta_frame = tk.Frame(marco, bg='#FF6B00', relief=tk.RAISED, bd=2)
+        oferta_frame.pack(fill=tk.X, pady=(0, 15), padx=5)
+        
+        inner_oferta = tk.Frame(oferta_frame, bg='#FFF3E0')
+        inner_oferta.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
+        
+        porcentaje = int(DESCUENTO_PORCENTAJE * 100)
+        
+        tk.Label(
+            inner_oferta,
+            text=f"🎉 OFERTA DE LANZAMIENTO: {porcentaje}% DE DESCUENTO 🎉",
+            font=('Segoe UI', 12, 'bold'),
+            bg='#FFF3E0',
+            fg='#E65100'
+        ).pack(pady=(8, 3), padx=10)
+        
+        tk.Label(
+            inner_oferta,
+            text=f"Antes: ~~{PRECIO_BBDD_HISTORICA_ORIGINAL}€~~  |  Ahora: {PRECIO_BBDD_HISTORICA}€",
             font=('Segoe UI', 11, 'bold'),
-            foreground=COLOR_WARNING
-        ).pack(pady=10)
+            bg='#FFF3E0',
+            fg='#5D4037'
+        ).pack(pady=(0, 5), padx=10)
+        
+        tk.Label(
+            inner_oferta,
+            text="¡Aprovecha esta oferta limitada! Pago único",
+            font=('Segoe UI', 9, 'italic'),
+            bg='#FFF3E0',
+            fg='#8D6E63'
+        ).pack(pady=(0, 8), padx=10)
         
         botones = ttk.Frame(marco)
         botones.pack(pady=15)
