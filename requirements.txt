@@ -4,6 +4,11 @@ lxml>=4.9.0
 matplotlib>=3.7.0
 reportlab>=4.0.0
 numpy>=1.24.0
+scikit-learn>=1.3.0
+scipy>=1.11.0
+
+# Machine Learning - Auto-aprendizaje
+# Las librerías de ML están incluidas en scikit-learn y scipy
 
 # NOTA: tkinter viene con Python pero en Linux necesita instalación adicional
 # Ejecuta: sudo apt install python3-tk
